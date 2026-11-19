@@ -1,0 +1,33 @@
+# Self-hosted Patch: `docker compose up -d`, then open http://localhost:3000
+# Change the passwords and BETTER_AUTH_SECRET before exposing this to a network.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: patch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-patch}
+      POSTGRES_DB: patch
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patch"]
+      interval: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://patch:${POSTGRES_PASSWORD:-patch}@db:5432/patch
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET (openssl rand -base64 32)}
+      PATCH_BASE_URL: ${PATCH_BASE_URL:-http://localhost:3000}
+      PATCH_ALLOW_SIGNUP: ${PATCH_ALLOW_SIGNUP:-true}
+    ports:
+      - "3000:8080"
+
+volumes:
+  pgdata:
