@@ -1,0 +1,26 @@
+# Self-managed Postgres for the hosted Patch app.
+# Reachable only on the org's private network at palouse-patch-db.internal:5432.
+# Secret: POSTGRES_PASSWORD. Data lives on the pg_data volume; Fly takes daily
+# volume snapshots. See docs/operations.md for backups and restores.
+app = "palouse-patch-db"
+primary_region = "sjc"
+
+[build]
+  image = "postgres:16-alpine"
+
+[env]
+  POSTGRES_USER = "patch"
+  POSTGRES_DB = "patch"
+  PGDATA = "/var/lib/postgresql/data/pgdata"
+
+[processes]
+  # Tuned for a 256MB machine.
+  app = "postgres -c shared_buffers=48MB -c effective_cache_size=128MB -c work_mem=2MB -c maintenance_work_mem=16MB -c max_connections=25"
+
+[mounts]
+  source = "pg_data"
+  destination = "/var/lib/postgresql/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button, ErrorBanner, Field, Input } from "../components/ui.tsx";
 import { authClient } from "../lib/auth.ts";
@@ -23,7 +23,6 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export function SignInPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +36,7 @@ export function SignInPage() {
     const { error } = await authClient.signIn.email({ email, password });
     setBusy(false);
     if (error) return setError(error.message ?? "Could not sign in");
-    navigate({ to: "/" });
+    window.location.href = "/";
   }
 
   return (
@@ -67,7 +66,6 @@ export function SignInPage() {
 }
 
 export function SignUpPage() {
-  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -79,7 +77,7 @@ export function SignUpPage() {
     const { error } = await authClient.signUp.email(form);
     setBusy(false);
     if (error) return setError(error.message ?? "Could not create account");
-    navigate({ to: "/" });
+    window.location.href = "/";
   }
 
   return (
