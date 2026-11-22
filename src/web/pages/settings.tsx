@@ -72,6 +72,7 @@ function TokensCard() {
 
 function MembersCard() {
   const org = authClient.useActiveOrganization();
+  const config = useQuery({ queryKey: ["config"], queryFn: () => fetch("/api/config").then((r) => r.json()) });
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +83,11 @@ function MembersCard() {
     setMessage(null);
     const { error } = await authClient.organization.inviteMember({ email, role: "member" });
     if (error) return setError(error.message ?? "Could not invite");
-    setMessage(`Invitation created for ${email}. Email delivery is not configured yet; ask them to sign up with this address.`);
+    setMessage(
+      config.data?.mailEnabled
+        ? `Invitation sent to ${email}.`
+        : `Invitation created for ${email}. Email delivery is not configured; ask them to sign up with this address and open /accept-invitation from the server log.`,
+    );
     setEmail("");
     org.refetch();
   }

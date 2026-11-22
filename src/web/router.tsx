@@ -2,7 +2,14 @@ import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/re
 import { AppLayout } from "./components/layout.tsx";
 import { ActivityPage } from "./pages/activity.tsx";
 import { ArtifactDetailPage, ArtifactFormPage, ArtifactsPage } from "./pages/artifacts.tsx";
-import { OnboardingPage, SignInPage, SignUpPage } from "./pages/auth.tsx";
+import {
+  AcceptInvitationPage,
+  ForgotPasswordPage,
+  OnboardingPage,
+  ResetPasswordPage,
+  SignInPage,
+  SignUpPage,
+} from "./pages/auth.tsx";
 import { OverviewPage } from "./pages/overview.tsx";
 import { PeoplePage, PersonDetailPage, PersonFormPage } from "./pages/people.tsx";
 import { SettingsPage } from "./pages/settings.tsx";
@@ -18,6 +25,16 @@ const root = createRootRoute({
 const signIn = createRoute({ getParentRoute: () => root, path: "/sign-in", component: SignInPage });
 const signUp = createRoute({ getParentRoute: () => root, path: "/sign-up", component: SignUpPage });
 const onboarding = createRoute({ getParentRoute: () => root, path: "/onboarding", component: OnboardingPage });
+const forgotPassword = createRoute({ getParentRoute: () => root, path: "/forgot-password", component: ForgotPasswordPage });
+const resetPassword = createRoute({ getParentRoute: () => root, path: "/reset-password", component: ResetPasswordPage });
+const acceptInvitation = createRoute({
+  getParentRoute: () => root,
+  path: "/accept-invitation/$id",
+  component: function AcceptInvitationRoute() {
+    const { id } = acceptInvitation.useParams();
+    return <AcceptInvitationPage id={id} />;
+  },
+});
 const app = createRoute({ getParentRoute: () => root, id: "app", component: AppLayout });
 
 const page = (path: string, component: () => React.ReactNode) => createRoute({ getParentRoute: () => app, path, component });
@@ -26,6 +43,9 @@ const routeTree = root.addChildren([
   signIn,
   signUp,
   onboarding,
+  forgotPassword,
+  resetPassword,
+  acceptInvitation,
   app.addChildren([
     page("/", OverviewPage),
     page("/systems", SystemsPage),

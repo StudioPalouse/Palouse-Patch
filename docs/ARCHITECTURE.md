@@ -71,4 +71,4 @@ Shared database, shared schema. Every tenant table has `organization_id`, and al
 
 ## Hosting
 
-The hosted version runs on Fly.io in the `palouse-patch-47` organization: one auto-stopping app machine (`palouse-patch`) and one self-managed Postgres machine (`palouse-patch-db`) with a volume. See [operations.md](operations.md).
+The hosted version runs on Fly.io in the `palouse-patch` organization: one auto-stopping app machine (`palouse-patch`) and one self-managed Postgres machine (`palouse-patch-db`) with a volume. See [operations.md](operations.md).

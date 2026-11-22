@@ -1,5 +1,5 @@
 # Fly.io config for the hosted Patch app.
-# Secrets (set with `fly secrets set`): DATABASE_URL, BETTER_AUTH_SECRET
+# Secrets (set with `fly secrets set`): DATABASE_URL, BETTER_AUTH_SECRET, RESEND_API_KEY
 app = "palouse-patch"
 primary_region = "sjc"
 
@@ -9,7 +9,8 @@ primary_region = "sjc"
 [env]
   NODE_ENV = "production"
   PORT = "8080"
-  PATCH_BASE_URL = "https://palouse-patch.fly.dev"
+  PATCH_BASE_URL = "https://patch.palouse.ai"
+  MAIL_FROM = "Patch <patch@palouse.ai>"
   PATCH_AUTO_MIGRATE = "true"
 
 [http_service]

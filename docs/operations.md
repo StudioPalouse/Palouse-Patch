@@ -2,19 +2,25 @@
 
 | Fly app | What | Size |
 |---|---|---|
-| `palouse-patch` | Web app and API. Public at https://palouse-patch.fly.dev | shared-cpu-1x, 256MB, auto stop and start |
+| `palouse-patch` | Web app and API. Public at https://patch.palouse.ai (also https://palouse-patch.fly.dev) | shared-cpu-1x, 256MB, auto stop and start |
 | `palouse-patch-db` | Postgres 16 (`postgres:16-alpine`), private only at `palouse-patch-db.internal:5432` | shared-cpu-1x, 256MB, 1GB volume `pg_data` |
 
-Both live in the `palouse-patch-47` organization in region `sjc`.
+Both live in the `palouse-patch` organization in region `sjc`.
 
 ## Secrets
 
 | App | Secret |
 |---|---|
-| `palouse-patch` | `DATABASE_URL`, `BETTER_AUTH_SECRET` |
+| `palouse-patch` | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY` |
 | `palouse-patch-db` | `POSTGRES_PASSWORD` |
 
 Rotating `BETTER_AUTH_SECRET` signs everyone out. Rotating the database password means changing it in Postgres (`ALTER USER patch PASSWORD '...'`) and then updating both secrets.
+
+## Domain and email
+
+`patch.palouse.ai` is an A/AAAA record (DNS at Namecheap) pointing at the app's Fly IPs, with a Let's Encrypt certificate managed by Fly (`fly certs show patch.palouse.ai`). `PATCH_BASE_URL` in `fly.toml` must match the domain users visit, because Better Auth rejects sign-ins from other origins; signing in via `palouse-patch.fly.dev` will not work.
+
+Email (password resets, organization invitations) goes through Resend, sending as `MAIL_FROM` (`patch@palouse.ai`). The `palouse.ai` domain is verified in Resend with DKIM at `resend._domainkey.palouse.ai` and SPF/MX on `send.palouse.ai`. Without `RESEND_API_KEY` the app logs emails instead of sending them, so `fly logs` shows the links. Failed sends are logged as `[mail] Resend rejected email`.
 
 ## Deploying
 
