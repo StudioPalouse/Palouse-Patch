@@ -1,32 +1,34 @@
-# Fly.io config for the hosted Patch app.
-# Secrets (set with `fly secrets set`): DATABASE_URL, BETTER_AUTH_SECRET
-app = "palouse-patch"
-primary_region = "sjc"
+# fly.toml app configuration file generated for palouse-patch on 2026-11-22T22:59:39Z
+#
+# See https://docs.fly.io/reference/configuration for information about how to use this file.
+#
+
+app = 'palouse-patch'
+primary_region = 'ams'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  NODE_ENV = "production"
-  PORT = "8080"
-  PATCH_BASE_URL = "https://palouse-patch.fly.dev"
-  PATCH_AUTO_MIGRATE = "true"
+  NODE_ENV = 'production'
+  PATCH_AUTO_MIGRATE = 'true'
+  PATCH_BASE_URL = 'https://palouse-patch.fly.dev'
+  PORT = '8080'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  # Scale to zero when idle to keep costs near nothing; first request wakes it.
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
   [[http_service.checks]]
-    grace_period = "15s"
-    interval = "30s"
-    method = "GET"
-    path = "/healthz"
-    timeout = "5s"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/healthz'
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
