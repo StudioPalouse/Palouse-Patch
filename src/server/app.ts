@@ -22,7 +22,7 @@ export function createApp() {
     return c.json({ ok: true });
   });
 
-  app.get("/api/config", (c) => c.json({ allowSignup: config.allowSignup, mailEnabled: !!config.resendApiKey }));
+  app.get("/api/config", (c) => c.json({ allowSignup: config.allowSignup, mailEnabled: !!config.resendApiKey, requireWorkEmail: config.requireWorkEmail }));
   app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
   app.route("/api/v1", api);
   app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));

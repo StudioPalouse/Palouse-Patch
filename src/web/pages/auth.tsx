@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, ErrorBanner, Field, Input } from "../components/ui.tsx";
 import { authClient } from "../lib/auth.ts";
 import { slugify } from "../lib/format.ts";
+import { isBlockedEmailDomain, WORK_EMAIL_MESSAGE } from "../../shared/email-domains.ts";
 
 /** Where to go after signing in or up: a same-site ?redirect=/path, else home. */
 function redirectTarget() {
@@ -85,7 +86,10 @@ export function SignInPage() {
 }
 
 export function SignUpPage() {
+  const config = useQuery({ queryKey: ["config"], queryFn: () => fetch("/api/config").then((r) => r.json()) });
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  // Invited people may use any address (the server checks the invitation).
+  const workEmailOnly = !!config.data?.requireWorkEmail && !redirectTarget().startsWith("/accept-invitation/");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -106,7 +110,11 @@ export function SignUpPage() {
         <Field label="Name">
           <Input required autoComplete="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </Field>
-        <Field label="Work email">
+        <Field
+          label="Work email"
+          hint={workEmailOnly ? "Use your company address; personal providers like Gmail aren't accepted." : undefined}
+          error={workEmailOnly && form.email.includes("@") && isBlockedEmailDomain(form.email) ? WORK_EMAIL_MESSAGE : undefined}
+        >
           <Input type="email" required autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </Field>
         <Field label="Password" hint="At least 10 characters">

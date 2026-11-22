@@ -12,6 +12,7 @@ primary_region = "sjc"
   PATCH_BASE_URL = "https://patch.palouse.ai"
   MAIL_FROM = "Patch <patch@palouse.ai>"
   PATCH_AUTO_MIGRATE = "true"
+  PATCH_REQUIRE_WORK_EMAIL = "true"
 
 [http_service]
   internal_port = 8080

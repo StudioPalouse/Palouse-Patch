@@ -1,11 +1,29 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins/organization";
-import { asc, eq } from "drizzle-orm";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../db/client.ts";
 import * as schema from "../db/schema.ts";
 import { config } from "./config.ts";
 import { actionEmail, sendMail } from "./mail.ts";
+import { isBlockedEmailDomain, WORK_EMAIL_MESSAGE } from "../shared/email-domains.ts";
+
+/** A pending, unexpired invitation lets someone sign up from any domain. */
+async function hasPendingInvitation(email: string) {
+  const [row] = await db
+    .select({ id: schema.invitation.id })
+    .from(schema.invitation)
+    .where(
+      and(
+        eq(sql`lower(${schema.invitation.email})`, email.trim().toLowerCase()),
+        eq(schema.invitation.status, "pending"),
+        gt(schema.invitation.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
 
 export const auth = betterAuth({
   baseURL: config.baseUrl,
@@ -62,6 +80,15 @@ export const auth = betterAuth({
         },
       },
     },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-up/email" || !config.requireWorkEmail) return;
+      const email = typeof ctx.body?.email === "string" ? ctx.body.email : "";
+      if (isBlockedEmailDomain(email, config.blockedEmailDomains) && !(await hasPendingInvitation(email))) {
+        throw new APIError("BAD_REQUEST", { message: WORK_EMAIL_MESSAGE, code: "WORK_EMAIL_REQUIRED" });
+      }
+    }),
   },
   telemetry: { enabled: false },
 });

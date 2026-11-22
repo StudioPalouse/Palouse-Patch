@@ -13,6 +13,8 @@ export const config = {
   authSecret: env.BETTER_AUTH_SECRET,
   allowSignup: bool(env.PATCH_ALLOW_SIGNUP, true),
   autoMigrate: bool(env.PATCH_AUTO_MIGRATE, true),
+  requireWorkEmail: bool(env.PATCH_REQUIRE_WORK_EMAIL, false),
+  blockedEmailDomains: (env.PATCH_BLOCKED_EMAIL_DOMAINS ?? "").split(",").map((d) => d.trim()).filter(Boolean),
   resendApiKey: env.RESEND_API_KEY || undefined,
   mailFrom: env.MAIL_FROM || "Patch <patch@palouse.ai>",
   isProduction: env.NODE_ENV === "production",

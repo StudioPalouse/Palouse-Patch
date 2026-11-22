@@ -22,6 +22,10 @@ Rotating `BETTER_AUTH_SECRET` signs everyone out. Rotating the database password
 
 Email (password resets, organization invitations) goes through Resend, sending as `MAIL_FROM` (`patch@palouse.ai`). The `palouse.ai` domain is verified in Resend with DKIM at `resend._domainkey.palouse.ai` and SPF/MX on `send.palouse.ai`. Without `RESEND_API_KEY` the app logs emails instead of sending them, so `fly logs` shows the links. Failed sends are logged as `[mail] Resend rejected email`.
 
+## Sign-up policy
+
+`PATCH_REQUIRE_WORK_EMAIL=true` (in `fly.toml`) refuses sign-ups from personal email providers; the list lives in `src/shared/email-domains.ts` and covers subdomains. Add more with `PATCH_BLOCKED_EMAIL_DOMAINS=example.com,other.net` (`fly secrets set` or `[env]`). Anyone with a pending, unexpired invitation can sign up from any address, so admins can still bring in contractors on personal email. `PATCH_ALLOW_SIGNUP=false` closes sign-ups entirely.
+
 ## Deploying
 
 From the repository root:
