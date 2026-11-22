@@ -9,11 +9,16 @@ import { AppError } from "../core/errors.ts";
 import { api } from "./api.ts";
 import { auth } from "./auth.ts";
 import { config } from "./config.ts";
+import { setNotifier } from "../core/notify.ts";
+import { actionEmail, sendMail } from "./mail.ts";
 
 const webRoot = fileURLToPath(new URL("../../dist/web", import.meta.url));
 
 export function createApp() {
   const app = new Hono();
+
+  // Core services raise notifications (AI council reviews); deliver them by email.
+  setNotifier(({ path, ...n }) => sendMail(actionEmail({ ...n, url: `${config.baseUrl}${path}` })));
 
   app.use("*", secureHeaders());
 

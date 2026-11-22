@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -324,4 +326,200 @@ export const apiTokens = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("api_tokens_user_idx").on(t.userId)],
+);
+
+// ---------------------------------------------------------------------------
+// AI governance
+// ---------------------------------------------------------------------------
+
+/** One step in the org's AI council review order. Members are logins. */
+export const aiReviewStages = pgTable(
+  "ai_review_stages",
+  {
+    id: id(),
+    organizationId: orgId(),
+    name: text("name").notNull(),
+    description: text("description"),
+    position: integer("position").notNull(),
+    /** "any": one reviewer's approval completes the stage; "all": every reviewer must approve. */
+    rule: text("rule").notNull().default("any"),
+    /** Only requests at or above this risk tier go through the stage. */
+    minTier: text("min_tier").notNull().default("low"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("ai_review_stages_org_idx").on(t.organizationId, t.position)],
+);
+
+export const aiReviewStageMembers = pgTable(
+  "ai_review_stage_members",
+  {
+    stageId: text("stage_id")
+      .notNull()
+      .references(() => aiReviewStages.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: orgId(),
+  },
+  (t) => [primaryKey({ columns: [t.stageId, t.userId] }), index("ai_stage_members_user_idx").on(t.userId)],
+);
+
+/** A team member's request to bring an AI tool, feature or agent into the org. */
+export const aiRequests = pgTable(
+  "ai_requests",
+  {
+    id: id(),
+    organizationId: orgId(),
+    title: text("title").notNull(),
+    vendor: text("vendor"),
+    url: text("url"),
+    kind: text("kind").notNull().default("new_tool"),
+    /** Existing system the feature or agent runs in. */
+    systemId: text("system_id").references(() => systems.id, { onDelete: "set null" }),
+    teamId: text("team_id").references(() => teams.id, { onDelete: "set null" }),
+    requesterUserId: text("requester_user_id").references(() => user.id, { onDelete: "set null" }),
+    capability: text("capability").notNull(),
+    businessCase: text("business_case").notNull(),
+    dataDescription: text("data_description"),
+    expectedUsers: integer("expected_users"),
+    estimatedCost: text("estimated_cost"),
+    personalData: boolean("personal_data").notNull().default(false),
+    confidentialData: boolean("confidential_data").notNull().default(false),
+    writeAccess: boolean("write_access").notNull().default(false),
+    autonomous: boolean("autonomous").notNull().default(false),
+    customerFacing: boolean("customer_facing").notNull().default(false),
+    peopleDecisions: boolean("people_decisions").notNull().default(false),
+    trainsOnData: text("trains_on_data").notNull().default("unknown"),
+    riskTier: text("risk_tier").notNull(),
+    status: text("status").notNull().default("in_review"),
+    conditions: text("conditions"),
+    /** The inventory system the approved request was added to. */
+    resultSystemId: text("result_system_id").references(() => systems.id, { onDelete: "set null" }),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("ai_requests_org_status_idx").on(t.organizationId, t.status),
+    index("ai_requests_requester_idx").on(t.requesterUserId),
+  ],
+);
+
+/** The review order, copied from the council stages when a request is submitted. */
+export const aiRequestSteps = pgTable(
+  "ai_request_steps",
+  {
+    id: id(),
+    organizationId: orgId(),
+    requestId: text("request_id")
+      .notNull()
+      .references(() => aiRequests.id, { onDelete: "cascade" }),
+    stageId: text("stage_id").references(() => aiReviewStages.id, { onDelete: "set null" }),
+    position: integer("position").notNull(),
+    name: text("name").notNull(),
+    rule: text("rule").notNull().default("any"),
+    status: text("status").notNull().default("waiting"),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("ai_request_steps_request_idx").on(t.requestId, t.position)],
+);
+
+/** Timeline of a request: submissions, decisions and comments. */
+export const aiRequestEvents = pgTable(
+  "ai_request_events",
+  {
+    id: id(),
+    organizationId: orgId(),
+    requestId: text("request_id")
+      .notNull()
+      .references(() => aiRequests.id, { onDelete: "cascade" }),
+    stepId: text("step_id").references(() => aiRequestSteps.id, { onDelete: "set null" }),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    actorLabel: text("actor_label").notNull(),
+    type: text("type").notNull(),
+    comment: text("comment"),
+    conditions: text("conditions"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("ai_request_events_request_idx").on(t.requestId, t.createdAt)],
+);
+
+/** Marks a system as part of the AI inventory, with its governance details. */
+export const aiProfiles = pgTable(
+  "ai_profiles",
+  {
+    id: id(),
+    organizationId: orgId(),
+    systemId: text("system_id")
+      .notNull()
+      .unique()
+      .references(() => systems.id, { onDelete: "cascade" }),
+    riskTier: text("risk_tier").notNull().default("medium"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    reviewDueAt: date("review_due_at", { mode: "string" }),
+    /** People expected to use it: the adoption denominator when seats are unknown. */
+    targetUsers: integer("target_users"),
+    conditions: text("conditions"),
+    notes: text("notes"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("ai_profiles_org_idx").on(t.organizationId)],
+);
+
+/** An AI capability of a system and whether the council allows it. */
+export const aiCapabilities = pgTable(
+  "ai_capabilities",
+  {
+    id: id(),
+    organizationId: orgId(),
+    systemId: text("system_id")
+      .notNull()
+      .references(() => systems.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    status: text("status").notNull().default("approved"),
+    notes: text("notes"),
+    requestId: text("request_id").references(() => aiRequests.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("ai_capabilities_system_idx").on(t.systemId)],
+);
+
+/** Point-in-time usage, entered by hand or pushed through the API. */
+export const aiUsageSnapshots = pgTable(
+  "ai_usage_snapshots",
+  {
+    id: id(),
+    organizationId: orgId(),
+    systemId: text("system_id")
+      .notNull()
+      .references(() => systems.id, { onDelete: "cascade" }),
+    recordedOn: date("recorded_on", { mode: "string" }).notNull(),
+    activeUsers: integer("active_users").notNull(),
+    licensedSeats: integer("licensed_seats"),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("ai_usage_system_day_idx").on(t.systemId, t.recordedOn)],
+);
+
+/** How far a team has adopted an AI tool. */
+export const aiTeamRollouts = pgTable(
+  "ai_team_rollouts",
+  {
+    organizationId: orgId(),
+    systemId: text("system_id")
+      .notNull()
+      .references(() => systems.id, { onDelete: "cascade" }),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("not_started"),
+    adoptedAt: timestamp("adopted_at", { withTimezone: true }),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.systemId, t.teamId] })],
 );

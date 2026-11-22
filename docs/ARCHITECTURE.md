@@ -61,13 +61,24 @@ Shared database, shared schema. Every tenant table has `organization_id`, and al
 | Artifact | Something built on a platform system (flow, app, form, bot, agent...), with external URL and id |
 | AuditEvent | Append-only log of every change with a field level diff |
 | ApiToken | Personal token for the REST API; only a SHA-256 hash is stored |
+| AiReviewStage | One stage of the org's AI council review order: reviewers (logins), an "any one" or "all" rule, and the minimum risk tier it applies to |
+| AiRequest | A request to bring in an AI tool, an AI feature of an existing system, or an agent. Intake answers compute a risk tier (low, medium, high) |
+| AiRequestStep, AiRequestEvent | The stages copied onto a request when it's submitted, plus its timeline of decisions and comments |
+| AiProfile | Puts a system in the AI inventory: risk tier, approval and re-review dates, expected users, conditions |
+| AiCapability | An AI capability of a system, ruled approved, restricted or prohibited, optionally linked to the request that approved it |
+| AiUsageSnapshot, AiTeamRollout | Adoption: active users vs seats per day (entered by hand or through the API) and each team's rollout status |
+
+### AI governance flow
+
+1. Admins set up the AI council in Settings as ordered stages (for example Security, then Privacy and Legal for medium risk and above, then an executive sponsor for high risk only).
+2. Any member submits a request. The yes/no intake answers compute the risk tier (`assessRisk` in `src/shared/domain.ts`), and the applicable stages are copied onto the request as steps.
+3. Reviewers for the active step approve, request changes (back to the requester, who resubmits; stages already passed stay passed), or reject. A requester never reviews their own request. A stage with no eligible reviewers falls back to org admins, and with no stages configured an admin approves.
+4. When the last step is approved, the request is added to the inventory: its system is linked or created, given an AI profile, and the capability is recorded (restricted if reviewers attached conditions).
+5. Reviewers and requesters are emailed at each step through `src/core/notify.ts`, which the server wires to Resend.
 
 ## Roadmap
 
-1. **MVP (this release):** catalog, owners, use cases, artifacts, teams, search, activity log, REST API and tokens, Docker and Fly deploy.
-2. **Agentic:** MCP server at `/mcp` (Streamable HTTP, OAuth 2.1 plus API tokens), read tools first (`search`, `get_system`, `find_owner`, `list_use_cases`, `find_artifacts`), then write tools. OIDC/SAML SSO. CSV import and export.
-3. **Licenses and usage:** contracts, seats, cost, renewal reminders (via a Postgres-backed job queue such as pg-boss), usage snapshots.
-4. **Rollouts and adoption:** initiatives to roll a system out to teams, stages, champions, training resources, feedback, adoption metrics, and an AI tool register.
+See [ROADMAP.md](ROADMAP.md).
 
 ## Hosting
 

@@ -6,12 +6,13 @@ Patch is an open source, lightweight catalog of the systems your business runs o
 - **Owners**: business owners, technical owners, admins and champions (people do not need a login)
 - **Use cases**: what the business actually uses each system for
 - **Artifacts**: flows, apps, forms and agents built on platforms like Power Automate, Appian and Nintex, with direct links back to them
+- **AI governance**: team members request AI tools, features and agents; your AI council reviews them through ordered stages chosen by risk tier; approved tools land in an AI inventory with capability rulings, usage and team adoption
 - **Activity log**: every change, who made it, and when
 - **REST API** with personal API tokens
 
 It is meant as a simple alternative to heavyweight enterprise architecture tools, easy enough for IT and business teams to keep up to date.
 
-Coming next: an MCP server so assistants like Claude and Microsoft Copilot can query Patch, SSO, license and usage tracking, and rollout and adoption tooling for new (especially AI) systems. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Coming next: an MCP server so assistants like Claude and Microsoft Copilot can query Patch, SSO, and license tracking. See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Self-hosting
 

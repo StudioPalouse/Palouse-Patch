@@ -24,6 +24,7 @@ import {
   Textarea,
 } from "../components/ui.tsx";
 import { ActivityFeed } from "./activity.tsx";
+import { AiSystemCard } from "../components/ai-cards.tsx";
 import { api, qs, type Person, type System, type SystemDetail } from "../lib/api.ts";
 import { useDebounced, useDelete, useEntityForm } from "../lib/hooks.ts";
 
@@ -201,6 +202,7 @@ export function SystemDetailPage() {
             />
             {s.description && <p className="mt-5 text-sm whitespace-pre-wrap text-stone-700">{s.description}</p>}
           </Card>
+          <AiSystemCard systemId={id} />
           <Card title="Use cases" actions={<LinkButton to={`/use-cases/new?systemId=${id}`} variant="secondary">Add</LinkButton>}>
             {s.useCases.length === 0 ? (
               <p className="text-sm text-stone-500">No use cases linked yet. What is this system used for?</p>

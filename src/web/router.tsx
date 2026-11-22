@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
 import { AppLayout } from "./components/layout.tsx";
 import { ActivityPage } from "./pages/activity.tsx";
+import { AiInventoryPage, AiRequestDetailPage, AiRequestFormPage, AiRequestsPage } from "./pages/ai.tsx";
 import { ArtifactDetailPage, ArtifactFormPage, ArtifactsPage } from "./pages/artifacts.tsx";
 import {
   AcceptInvitationPage,
@@ -68,6 +69,11 @@ const routeTree = root.addChildren([
     page("/teams/new", TeamFormPage),
     page("/teams/$id", TeamDetailPage),
     page("/teams/$id/edit", TeamFormPage),
+    page("/ai", AiInventoryPage),
+    page("/ai/requests", AiRequestsPage),
+    page("/ai/requests/new", AiRequestFormPage),
+    page("/ai/requests/$id", AiRequestDetailPage),
+    page("/ai/requests/$id/edit", AiRequestFormPage),
     page("/activity", ActivityPage),
     page("/settings", SettingsPage),
   ]),

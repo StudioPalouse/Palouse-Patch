@@ -1,4 +1,7 @@
 import { Hono } from "hono";
+import * as aiCouncil from "../core/ai-council.ts";
+import * as aiInventory from "../core/ai-inventory.ts";
+import * as aiRequests from "../core/ai-requests.ts";
 import * as artifacts from "../core/artifacts.ts";
 import { listAudit } from "../core/audit.ts";
 import * as members from "../core/members.ts";
@@ -27,9 +30,10 @@ async function body(c: { req: { json: () => Promise<unknown> } }) {
 export const api = new Hono<Env>()
   .use("*", requireOrg)
 
-  .get("/me", (c) => {
+  .get("/me", async (c) => {
     const ctx = ctxOf(c);
-    return c.json({ orgId: ctx.orgId, role: ctx.role, actor: ctx.actor });
+    const isCouncil = await aiCouncil.isCouncilMember(ctx.db, ctx.orgId, ctx.actor.userId);
+    return c.json({ data: { orgId: ctx.orgId, role: ctx.role, actor: ctx.actor, isCouncil } });
   })
   .get("/search", async (c) => c.json({ data: await search(ctxOf(c), c.req.query("q") ?? "") }))
   .get("/activity", async (c) => {
@@ -139,6 +143,83 @@ export const api = new Hono<Env>()
     await teams.deleteTeam(ctxOf(c), c.req.param("id"));
     return c.body(null, 204);
   })
+
+  // AI council (review stages)
+  .get("/ai/council", async (c) => c.json({ data: await aiCouncil.listStages(ctxOf(c)) }))
+  .post("/ai/council/stages", async (c) => c.json({ data: await aiCouncil.createStage(ctxOf(c), await body(c)) }, 201))
+  .put("/ai/council/order", async (c) => {
+    await aiCouncil.reorderStages(ctxOf(c), (await body(c))?.ids);
+    return c.body(null, 204);
+  })
+  .put("/ai/council/stages/:id", async (c) =>
+    c.json({ data: await aiCouncil.updateStage(ctxOf(c), c.req.param("id"), await body(c)) }),
+  )
+  .delete("/ai/council/stages/:id", async (c) => {
+    await aiCouncil.deleteStage(ctxOf(c), c.req.param("id"));
+    return c.body(null, 204);
+  })
+
+  // AI tool requests
+  .get("/ai/requests", async (c) => {
+    const status = str(c.req.query("status"));
+    aiRequests.assertKnownStatus(status);
+    return c.json({
+      data: await aiRequests.listRequests(ctxOf(c), {
+        q: str(c.req.query("q")),
+        status,
+        mine: c.req.query("mine") === "true",
+        awaiting: c.req.query("awaiting") === "me",
+      }),
+    });
+  })
+  .post("/ai/requests", async (c) => c.json({ data: await aiRequests.createRequest(ctxOf(c), await body(c)) }, 201))
+  .get("/ai/requests/:id", async (c) => c.json({ data: await aiRequests.getRequest(ctxOf(c), c.req.param("id")) }))
+  .put("/ai/requests/:id", async (c) =>
+    c.json({ data: await aiRequests.resubmitRequest(ctxOf(c), c.req.param("id"), await body(c)) }),
+  )
+  .post("/ai/requests/:id/decision", async (c) =>
+    c.json({ data: await aiRequests.decideRequest(ctxOf(c), c.req.param("id"), await body(c)) }),
+  )
+  .post("/ai/requests/:id/comments", async (c) => {
+    await aiRequests.commentOnRequest(ctxOf(c), c.req.param("id"), await body(c));
+    return c.body(null, 204);
+  })
+  .post("/ai/requests/:id/withdraw", async (c) =>
+    c.json({ data: await aiRequests.withdrawRequest(ctxOf(c), c.req.param("id")) }),
+  )
+
+  // AI inventory and adoption
+  .get("/ai/inventory", async (c) => c.json({ data: await aiInventory.listInventory(ctxOf(c)) }))
+  .get("/systems/:id/ai", async (c) => c.json({ data: await aiInventory.getAiDetails(ctxOf(c), c.req.param("id")) }))
+  .put("/systems/:id/ai", async (c) =>
+    c.json({ data: await aiInventory.saveAiProfile(ctxOf(c), c.req.param("id"), await body(c)) }),
+  )
+  .delete("/systems/:id/ai", async (c) => {
+    await aiInventory.removeAiProfile(ctxOf(c), c.req.param("id"));
+    return c.body(null, 204);
+  })
+  .post("/systems/:id/ai/capabilities", async (c) =>
+    c.json({ data: await aiInventory.addCapability(ctxOf(c), c.req.param("id"), await body(c)) }, 201),
+  )
+  .put("/systems/:id/ai/capabilities/:capabilityId", async (c) =>
+    c.json({
+      data: await aiInventory.updateCapability(ctxOf(c), c.req.param("id"), c.req.param("capabilityId"), await body(c)),
+    }),
+  )
+  .delete("/systems/:id/ai/capabilities/:capabilityId", async (c) => {
+    await aiInventory.deleteCapability(ctxOf(c), c.req.param("id"), c.req.param("capabilityId"));
+    return c.body(null, 204);
+  })
+  .post("/systems/:id/ai/usage", async (c) =>
+    c.json({ data: await aiInventory.recordUsage(ctxOf(c), c.req.param("id"), await body(c)) }, 201),
+  )
+  .delete("/systems/:id/ai/usage/:snapshotId", async (c) => {
+    await aiInventory.deleteUsage(ctxOf(c), c.req.param("id"), c.req.param("snapshotId"));
+    return c.body(null, 204);
+  })
+  .put("/systems/:id/ai/rollouts/:teamId", async (c) =>
+    c.json({ data: await aiInventory.setRollout(ctxOf(c), c.req.param("id"), c.req.param("teamId"), await body(c)) }),
+  )
 
   // Members (admin actions)
   .post("/members/:userId/password-reset", async (c) =>

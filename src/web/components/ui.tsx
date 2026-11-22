@@ -95,6 +95,16 @@ const badgeTone: Record<string, string> = {
   retired: "bg-stone-200 text-stone-600",
   critical: "bg-red-100 text-red-800",
   high: "bg-orange-100 text-orange-800",
+  in_review: "bg-sky-100 text-sky-800",
+  changes_requested: "bg-amber-100 text-amber-800",
+  approved: "bg-leaf-100 text-leaf-800",
+  rejected: "bg-red-100 text-red-800",
+  withdrawn: "bg-stone-200 text-stone-600",
+  restricted: "bg-amber-100 text-amber-800",
+  prohibited: "bg-red-100 text-red-800",
+  adopted: "bg-leaf-100 text-leaf-800",
+  piloting: "bg-sky-100 text-sky-800",
+  paused: "bg-amber-100 text-amber-800",
 };
 
 export function Badge({ value, children }: { value?: string; children?: ReactNode }) {

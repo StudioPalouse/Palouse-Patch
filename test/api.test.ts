@@ -33,6 +33,13 @@ describe("REST API", () => {
     expect(list.data).toEqual([]);
   });
 
+  it("describes the caller under data, like every other endpoint", async () => {
+    const ctx = await makeOrg("admin");
+    const { token } = await createApiToken(ctx, { name: "me" });
+    const { data } = await (await call("/api/v1/me", token)).json();
+    expect(data).toMatchObject({ orgId: ctx.orgId, role: "admin", isCouncil: false });
+  });
+
   it("returns field errors for invalid input", async () => {
     const ctx = await makeOrg();
     const { token } = await createApiToken(ctx, { name: "t" });

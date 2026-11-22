@@ -116,3 +116,105 @@ export type ApiToken = {
   createdAt: string;
   token?: string;
 };
+
+// AI governance
+export type Me = { orgId: string; role: string; actor: { userId: string; label: string }; isCouncil: boolean };
+export type CouncilStage = {
+  id: string;
+  name: string;
+  description: string | null;
+  position: number;
+  rule: string;
+  minTier: string;
+  members: { userId: string; name: string; email: string }[];
+};
+export type AiRequest = {
+  id: string;
+  title: string;
+  vendor: string | null;
+  url: string | null;
+  kind: string;
+  systemId: string | null;
+  teamId: string | null;
+  requesterUserId: string | null;
+  capability: string;
+  businessCase: string;
+  dataDescription: string | null;
+  expectedUsers: number | null;
+  estimatedCost: string | null;
+  personalData: boolean;
+  confidentialData: boolean;
+  writeAccess: boolean;
+  autonomous: boolean;
+  customerFacing: boolean;
+  peopleDecisions: boolean;
+  trainsOnData: string;
+  riskTier: string;
+  status: string;
+  conditions: string | null;
+  resultSystemId: string | null;
+  submittedAt: string;
+  decidedAt: string | null;
+  requesterName: string | null;
+  teamName: string | null;
+  systemName: string | null;
+  currentStep?: string | null;
+  awaitingMe?: boolean;
+};
+export type AiRequestDetail = AiRequest & {
+  resultSystem: { id: string; name: string } | null;
+  risk: { tier: string; reasons: string[] };
+  steps: {
+    id: string;
+    name: string;
+    rule: string;
+    status: string;
+    position: number;
+    completedAt: string | null;
+    reviewers: { userId: string; name: string }[];
+    /** User ids that approved the step in its current round. */
+    approvedBy: string[];
+  }[];
+  events: { id: string; type: string; actorLabel: string; comment: string | null; conditions: string | null; stepId: string | null; createdAt: string }[];
+  permissions: { canDecide: boolean; alreadyApproved: boolean; canEdit: boolean; canWithdraw: boolean };
+};
+export type AiInventory = {
+  tools: {
+    systemId: string;
+    name: string;
+    vendor: string | null;
+    lifecycle: string;
+    riskTier: string;
+    approvedAt: string | null;
+    reviewDueAt: string | null;
+    reviewOverdue: boolean;
+    capabilities: { approved: number; restricted: number; prohibited: number };
+    latestUsage: { recordedOn: string; activeUsers: number; licensedSeats: number | null } | null;
+    adoptionRate: number | null;
+    teams: { adopted: number; piloting: number; total: number };
+  }[];
+  summary: {
+    tools: number;
+    approvedCapabilities: number;
+    openRequests: number;
+    decidedRequests: number;
+    avgDaysToDecision: number | null;
+    averageAdoption: number | null;
+    reviewsOverdue: number;
+  };
+};
+export type AiDetails = {
+  profile: {
+    riskTier: string;
+    approvedAt: string | null;
+    reviewDueAt: string | null;
+    targetUsers: number | null;
+    conditions: string | null;
+    notes: string | null;
+  } | null;
+  capabilities: { id: string; name: string; status: string; notes: string | null; requestId: string | null }[];
+  usage: { id: string; recordedOn: string; activeUsers: number; licensedSeats: number | null }[];
+  adoptionRate: number | null;
+  rollouts: { teamId: string; teamName: string; status: string; adoptedAt: string | null }[];
+  requests: { id: string; title: string; capability: string; status: string; submittedAt: string }[];
+};

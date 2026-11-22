@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button, Card, ErrorBanner, Field, Input, PageHeader } from "../components/ui.tsx";
 import { api, type ApiToken } from "../lib/api.ts";
 import { authClient } from "../lib/auth.ts";
+import { AiCouncilCard } from "../components/ai-cards.tsx";
 import { timeAgo } from "../lib/format.ts";
 
 function TokensCard() {
@@ -250,6 +251,7 @@ export function SettingsPage() {
         <AccountCard />
         <MembersCard />
         <TokensCard />
+        <AiCouncilCard />
       </div>
     </>
   );

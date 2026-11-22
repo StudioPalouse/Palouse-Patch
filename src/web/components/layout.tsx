@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { api, type SearchHit } from "../lib/api.ts";
+import { api, type AiRequest, type SearchHit } from "../lib/api.ts";
 import { authClient } from "../lib/auth.ts";
 import { entityPath } from "../lib/format.ts";
 import { useDebounced } from "../lib/hooks.ts";
@@ -14,6 +14,8 @@ const nav = [
   { to: "/artifacts", label: "Artifacts" },
   { to: "/people", label: "People" },
   { to: "/teams", label: "Teams" },
+  { to: "/ai", label: "AI tools", exact: true },
+  { to: "/ai/requests", label: "AI requests" },
   { to: "/activity", label: "Activity" },
   { to: "/settings", label: "Settings" },
 ];
@@ -80,6 +82,12 @@ export function AppLayout() {
   const org = authClient.useActiveOrganization();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const awaiting = useQuery({
+    queryKey: ["ai-requests", "awaiting"],
+    queryFn: () => api.get<AiRequest[]>("/ai/requests?awaiting=me"),
+    enabled: !!session.data?.session.activeOrganizationId,
+    refetchInterval: 5 * 60_000,
+  });
 
   useEffect(() => {
     if (session.isPending) return;
@@ -106,10 +114,15 @@ export function AppLayout() {
               to={item.to}
               activeOptions={{ exact: !!item.exact }}
               onClick={() => setMenuOpen(false)}
-              className="block rounded-md px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/70 hover:text-stone-900"
+              className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-stone-600 hover:bg-white/70 hover:text-stone-900"
               activeProps={{ className: "bg-white text-leaf-800 shadow-xs" }}
             >
               {item.label}
+              {item.to === "/ai/requests" && !!awaiting.data?.length && (
+                <span className="rounded-full bg-leaf-700 px-1.5 text-xs text-white tabular-nums" title="Waiting for your review">
+                  {awaiting.data.length}
+                </span>
+              )}
             </Link>
           ))}
         </nav>

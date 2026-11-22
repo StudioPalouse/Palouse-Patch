@@ -18,6 +18,8 @@ export const slugify = (s: string) =>
     .slice(0, 48);
 
 export const entityPath = (type: string, id: string) =>
-  ({ system: `/systems/${id}`, use_case: `/use-cases/${id}`, artifact: `/artifacts/${id}`, person: `/people/${id}`, team: `/teams/${id}` })[
+  ({ system: `/systems/${id}`, use_case: `/use-cases/${id}`, artifact: `/artifacts/${id}`, person: `/people/${id}`, team: `/teams/${id}`, ai_request: `/ai/requests/${id}`, ai_council: `/settings#ai-council` })[
     type
   ] ?? "/";
+
+export const percent = (rate: number | null | undefined) => (rate == null ? "–" : `${Math.round(rate * 100)}%`);
