@@ -121,7 +121,9 @@ export function AppLayout() {
           </button>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-3 text-sm">
-            <span className="hidden text-stone-600 sm:inline">{session.data.user.name}</span>
+            <Link to="/settings" hash="account" className="hidden text-stone-600 hover:text-stone-900 hover:underline sm:inline" title="Your account">
+              {session.data.user.name}
+            </Link>
             <button
               className="text-stone-500 hover:text-stone-800"
               onClick={async () => {

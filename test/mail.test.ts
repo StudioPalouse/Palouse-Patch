@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/server/app.ts";
+import { auth } from "../src/server/auth.ts";
 import { config } from "../src/server/config.ts";
 
 const app = createApp();
@@ -27,6 +28,15 @@ describe("password reset email", () => {
     expect((await post("/api/auth/reset-password", { token, newPassword: "new-password-456" })).status).toBe(200);
     expect((await post("/api/auth/sign-in/email", { email, password: "new-password-456" })).status).toBe(200);
     expect((await post("/api/auth/sign-in/email", { email, password: "old-password-123" })).status).toBe(401);
+  });
+
+  it("can be triggered server-side (admin reset path)", async () => {
+    const email = `admin-reset-${Date.now()}@example.com`;
+    expect((await post("/api/auth/sign-up/email", { name: "Target", email, password: "old-password-123" })).status).toBe(200);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
+    const sent = log.mock.calls.map((c) => String(c[0])).find((m) => m.startsWith("[mail]") && m.includes(email));
+    expect(sent).toMatch(/reset-password\/[^?\s]+\?callbackURL=%2Freset-password/);
   });
 
   it("does not reveal whether an account exists", async () => {

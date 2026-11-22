@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import * as artifacts from "../core/artifacts.ts";
 import { listAudit } from "../core/audit.ts";
+import * as members from "../core/members.ts";
 import * as people from "../core/people.ts";
 import { search } from "../core/search.ts";
 import * as systems from "../core/systems.ts";
@@ -8,6 +9,7 @@ import * as teams from "../core/teams.ts";
 import * as tokens from "../core/tokens.ts";
 import * as useCases from "../core/use-cases.ts";
 import { AppError } from "../core/errors.ts";
+import { auth } from "./auth.ts";
 import { ctxOf, requireOrg, type Env } from "./context.ts";
 
 const str = (v: string | undefined) => (v && v.trim() ? v.trim() : undefined);
@@ -137,6 +139,15 @@ export const api = new Hono<Env>()
     await teams.deleteTeam(ctxOf(c), c.req.param("id"));
     return c.body(null, 204);
   })
+
+  // Members (admin actions)
+  .post("/members/:userId/password-reset", async (c) =>
+    c.json({
+      data: await members.sendMemberPasswordReset(ctxOf(c), c.req.param("userId"), async (email) => {
+        await auth.api.requestPasswordReset({ body: { email, redirectTo: "/reset-password" } });
+      }),
+    }),
+  )
 
   // API tokens (for the calling user)
   .get("/tokens", async (c) => c.json({ data: await tokens.listApiTokens(ctxOf(c)) }))

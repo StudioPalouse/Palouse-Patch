@@ -70,12 +70,119 @@ function TokensCard() {
   );
 }
 
+function AccountCard() {
+  const session = authClient.useSession();
+  const config = useQuery({ queryKey: ["config"], queryFn: () => fetch("/api/config").then((r) => r.json()) });
+  const [pw, setPw] = useState({ current: "", next: "" });
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<"change" | "reset" | null>(null);
+  const email = session.data?.user.email;
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy("change");
+    setError(null);
+    setMessage(null);
+    const { error } = await authClient.changePassword({
+      currentPassword: pw.current,
+      newPassword: pw.next,
+      revokeOtherSessions: true,
+    });
+    setBusy(null);
+    if (error) return setError(error.message ?? "Could not change password");
+    setPw({ current: "", next: "" });
+    setMessage("Password changed. You've been signed out on other devices.");
+  }
+
+  async function sendResetLink() {
+    if (!email) return;
+    setBusy("reset");
+    setError(null);
+    setMessage(null);
+    const { error } = await authClient.requestPasswordReset({ email, redirectTo: "/reset-password" });
+    setBusy(null);
+    if (error) return setError(error.message ?? "Could not send reset email");
+    setMessage(`We've emailed a password reset link to ${email}.`);
+  }
+
+  return (
+    <Card title="Your account" className="lg:col-span-2">
+      <div id="account" className="grid gap-6 md:grid-cols-2">
+        <dl className="space-y-3 text-sm">
+          <div>
+            <dt className="text-xs text-stone-500">Name</dt>
+            <dd className="font-medium text-stone-800">{session.data?.user.name}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-stone-500">Email</dt>
+            <dd className="font-medium text-stone-800">{email}</dd>
+          </div>
+        </dl>
+        <div>
+          <ErrorBanner error={error} />
+          {message && <p className="mb-3 text-sm text-leaf-800">{message}</p>}
+          <form onSubmit={changePassword} className="space-y-3">
+            <Field label="Current password">
+              <Input
+                type="password"
+                required
+                autoComplete="current-password"
+                value={pw.current}
+                onChange={(e) => setPw({ ...pw, current: e.target.value })}
+              />
+            </Field>
+            <Field label="New password" hint="At least 10 characters">
+              <Input
+                type="password"
+                required
+                minLength={10}
+                autoComplete="new-password"
+                value={pw.next}
+                onChange={(e) => setPw({ ...pw, next: e.target.value })}
+              />
+            </Field>
+            <Button type="submit" disabled={busy !== null}>
+              {busy === "change" ? "Saving…" : "Change password"}
+            </Button>
+          </form>
+          {config.data?.mailEnabled && (
+            <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-stone-500">
+              Don't know your current password?{" "}
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={sendResetLink}
+                className="font-medium text-leaf-700 hover:underline disabled:opacity-50"
+              >
+                {busy === "reset" ? "Sending…" : "Email me a reset link"}
+              </button>
+            </p>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function MembersCard() {
   const org = authClient.useActiveOrganization();
   const config = useQuery({ queryKey: ["config"], queryFn: () => fetch("/api/config").then((r) => r.json()) });
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const session = authClient.useSession();
+  const me = useQuery({ queryKey: ["me"], queryFn: () => api.get<{ role: string }>("/me") });
+  const isAdmin = me.data?.role === "admin" || me.data?.role === "owner";
+  const sendReset = useMutation({
+    mutationFn: (userId: string) => api.post<{ email: string }>(`/members/${userId}/password-reset`, {}),
+    onMutate: () => {
+      setError(null);
+      setMessage(null);
+    },
+    onSuccess: (data) => setMessage(`Password reset email sent to ${data.email}.`),
+    onError: (e) => setError(e.message),
+  });
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -101,7 +208,21 @@ function MembersCard() {
               <div className="font-medium text-stone-800">{m.user.name}</div>
               <div className="text-xs text-stone-500">{m.user.email}</div>
             </div>
-            <span className="text-xs text-stone-500 capitalize">{m.role}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-stone-500 capitalize">{m.role}</span>
+              {isAdmin && config.data?.mailEnabled && m.userId !== session.data?.user.id && (
+                <Button
+                  variant="ghost"
+                  disabled={sendReset.isPending}
+                  onClick={() =>
+                    confirm(`Email ${m.user.name} a link to reset their password?`) &&
+                    sendReset.mutate(m.userId)
+                  }
+                >
+                  Send password reset
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>
@@ -126,6 +247,7 @@ export function SettingsPage() {
     <>
       <PageHeader title="Settings" />
       <div className="grid gap-6 lg:grid-cols-2">
+        <AccountCard />
         <MembersCard />
         <TokensCard />
       </div>
