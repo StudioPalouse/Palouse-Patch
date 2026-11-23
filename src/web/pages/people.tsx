@@ -3,6 +3,7 @@ import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { label } from "../../shared/domain.ts";
 import {
+  Row,
   AccessBadge,
   Badge,
   Button,
@@ -43,7 +44,7 @@ export function PeoplePage() {
       ) : (
         <Table head={["Name", "Title", "Team", "Email", "Patch access"]}>
           {people.data?.map((p) => (
-            <tr key={p.id} className="hover:bg-stone-50">
+            <Row key={p.id} to={`/people/${p.id}`}>
               <Td>
                 <TextLink to={`/people/${p.id}`}>{p.name}</TextLink>
               </Td>
@@ -53,7 +54,7 @@ export function PeoplePage() {
               <Td>
                 <AccessBadge access={p.access} />
               </Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}

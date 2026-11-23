@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { label } from "../../shared/domain.ts";
 
@@ -181,17 +181,39 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
   );
 }
 
+/**
+ * A table row that opens `to` when clicked anywhere. The name link inside stays
+ * the keyboard and screen-reader target; clicks on inner controls, text
+ * selections, and Cmd/Ctrl-click (new tab) behave as usual.
+ */
+export function Row({ to, children }: { to: string; children: ReactNode }) {
+  const navigate = useNavigate();
+  return (
+    <tr
+      className="cursor-pointer hover:bg-stone-50"
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("a, button, input, select, textarea, label, summary")) return;
+        if (window.getSelection()?.toString()) return;
+        if (e.metaKey || e.ctrlKey) window.open(to, "_blank", "noopener");
+        else navigate({ to });
+      }}
+    >
+      {children}
+    </tr>
+  );
+}
+
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {
   return <td className={cx("px-4 py-3 align-top", className)}>{children}</td>;
 }
 
 export function DetailList({ items }: { items: [string, ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-x-6 gap-y-4">
       {items.map(([k, v]) => (
-        <div key={k}>
+        <div key={k} className="min-w-0">
           <dt className="text-xs font-medium tracking-wide text-stone-500 uppercase">{k}</dt>
-          <dd className="mt-1 text-sm text-stone-800">{v ?? <span className="text-stone-400">Not set</span>}</dd>
+          <dd className="mt-1 text-sm break-words text-stone-800">{v ?? <span className="text-stone-400">Not set</span>}</dd>
         </div>
       ))}
     </dl>

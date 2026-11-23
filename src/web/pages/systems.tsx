@@ -3,6 +3,7 @@ import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { CRITICALITIES, LIFECYCLES, OWNER_ROLES, label } from "../../shared/domain.ts";
 import {
+  Row,
   AccessBadge,
   Badge,
   Button,
@@ -63,7 +64,7 @@ export function SystemsPage() {
       ) : (
         <Table head={["Name", "Owners", "Lifecycle", "Criticality", "Use cases", "Artifacts"]}>
           {systems.data?.map((s) => (
-            <tr key={s.id} className="hover:bg-stone-50">
+            <Row key={s.id} to={`/systems/${s.id}`}>
               <Td>
                 <TextLink to={`/systems/${s.id}`}>{s.name}</TextLink>
                 <div className="text-xs text-stone-500">
@@ -82,7 +83,7 @@ export function SystemsPage() {
               </Td>
               <Td className="text-stone-600">{s.useCaseCount}</Td>
               <Td className="text-stone-600">{s.artifactCount}</Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}

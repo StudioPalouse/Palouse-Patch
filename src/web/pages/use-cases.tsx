@@ -3,6 +3,7 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { USE_CASE_STATUSES, label } from "../../shared/domain.ts";
 import {
+  Row,
   Badge,
   Button,
   Card,
@@ -57,7 +58,7 @@ export function UseCasesPage() {
       ) : (
         <Table head={["Use case", "Systems", "Team", "Status"]}>
           {useCases.data?.map((u) => (
-            <tr key={u.id} className="hover:bg-stone-50">
+            <Row key={u.id} to={`/use-cases/${u.id}`}>
               <Td>
                 <TextLink to={`/use-cases/${u.id}`}>{u.title}</TextLink>
                 {u.description && <div className="line-clamp-1 max-w-md text-xs text-stone-500">{u.description}</div>}
@@ -67,7 +68,7 @@ export function UseCasesPage() {
               <Td>
                 <Badge value={u.status} />
               </Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}

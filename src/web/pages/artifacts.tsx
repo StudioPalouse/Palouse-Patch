@@ -3,6 +3,7 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { ARTIFACT_STATUSES, ARTIFACT_TYPES, ENVIRONMENTS, label } from "../../shared/domain.ts";
 import {
+  Row,
   Badge,
   Button,
   Card,
@@ -57,7 +58,7 @@ export function ArtifactsPage() {
       ) : (
         <Table head={["Artifact", "Platform", "Owner", "Environment", "Status"]}>
           {artifacts.data?.map((a) => (
-            <tr key={a.id} className="hover:bg-stone-50">
+            <Row key={a.id} to={`/artifacts/${a.id}`}>
               <Td>
                 <TextLink to={`/artifacts/${a.id}`}>{a.name}</TextLink>
                 <div className="text-xs text-stone-500">{label(a.type)}</div>
@@ -70,7 +71,7 @@ export function ArtifactsPage() {
               <Td>
                 <Badge value={a.status} />
               </Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Input, LinkButton, Loading, PageHeader, Table, Td, TextLink, Textarea } from "../components/ui.tsx";
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Input, LinkButton, Loading, PageHeader, Row, Table, Td, TextLink, Textarea } from "../components/ui.tsx";
 import { api, type Team, type TeamDetail } from "../lib/api.ts";
 import { useDelete, useEntityForm } from "../lib/hooks.ts";
 
@@ -18,14 +18,14 @@ export function TeamsPage() {
       ) : (
         <Table head={["Team", "People", "Use cases"]}>
           {teams.data?.map((t) => (
-            <tr key={t.id} className="hover:bg-stone-50">
+            <Row key={t.id} to={`/teams/${t.id}`}>
               <Td>
                 <TextLink to={`/teams/${t.id}`}>{t.name}</TextLink>
                 {t.description && <div className="text-xs text-stone-500">{t.description}</div>}
               </Td>
               <Td className="text-stone-600">{t.peopleCount}</Td>
               <Td className="text-stone-600">{t.useCaseCount}</Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}

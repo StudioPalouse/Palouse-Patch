@@ -11,6 +11,7 @@ import {
   type RiskAnswers,
 } from "../../shared/domain.ts";
 import {
+  Row,
   Badge,
   Button,
   Card,
@@ -125,7 +126,7 @@ export function AiInventoryPage() {
           ) : (
             <Table head={["Tool", "Risk", "Capabilities", "Adoption", "Teams adopted", "Re-review"]}>
               {inventory.data?.tools.map((t) => (
-                <tr key={t.systemId} className="hover:bg-stone-50">
+                <Row key={t.systemId} to={`/systems/${t.systemId}`}>
                   <Td>
                     <TextLink to={`/systems/${t.systemId}`}>{t.name}</TextLink>
                     <div className="text-xs text-stone-500">
@@ -156,7 +157,7 @@ export function AiInventoryPage() {
                     {t.reviewDueAt ?? "–"}
                     {t.reviewOverdue && <div className="text-xs">Overdue</div>}
                   </Td>
-                </tr>
+                </Row>
               ))}
             </Table>
           )}
@@ -220,7 +221,7 @@ export function AiRequestsPage() {
       ) : (
         <Table head={["Request", "Risk", "Status", "Requested by", "Submitted"]}>
           {requests.data?.map((r) => (
-            <tr key={r.id} className="hover:bg-stone-50">
+            <Row key={r.id} to={`/ai/requests/${r.id}`}>
               <Td>
                 <TextLink to={`/ai/requests/${r.id}`}>{r.title}</TextLink>
                 <div className="text-xs text-stone-500">
@@ -241,7 +242,7 @@ export function AiRequestsPage() {
                 {r.teamName && <div className="text-xs text-stone-500">{r.teamName}</div>}
               </Td>
               <Td className="text-stone-600">{timeAgo(r.submittedAt)}</Td>
-            </tr>
+            </Row>
           ))}
         </Table>
       )}
