@@ -8,6 +8,7 @@ Patch is an open source, lightweight catalog of the systems your business runs o
 - **Artifacts**: flows, apps, forms and agents built on platforms like Power Automate, Appian and Nintex, with direct links back to them
 - **AI governance**: team members request AI tools, features and agents; your AI council reviews them through ordered stages chosen by risk tier; approved tools land in an AI inventory with capability rulings, usage and team adoption
 - **Activity log**: every change, who made it, and when
+- **Dark mode**: follows the system setting, or pick light or dark from the header
 - **REST API** with personal API tokens
 
 It is meant as a simple alternative to heavyweight enterprise architecture tools, easy enough for IT and business teams to keep up to date.

@@ -5,6 +5,7 @@ import { api, type AiRequest, type SearchHit } from "../lib/api.ts";
 import { authClient } from "../lib/auth.ts";
 import { entityPath } from "../lib/format.ts";
 import { useDebounced } from "../lib/hooks.ts";
+import { useTheme, type Theme } from "../lib/theme.ts";
 import { label } from "../../shared/domain.ts";
 
 const nav = [
@@ -119,7 +120,7 @@ export function AppLayout() {
             >
               {item.label}
               {item.to === "/ai/requests" && !!awaiting.data?.length && (
-                <span className="rounded-full bg-leaf-700 px-1.5 text-xs text-white tabular-nums" title="Waiting for your review">
+                <span className="rounded-full bg-accent px-1.5 text-xs text-on-accent tabular-nums" title="Waiting for your review">
                   {awaiting.data.length}
                 </span>
               )}
@@ -134,6 +135,7 @@ export function AppLayout() {
           </button>
           <GlobalSearch />
           <div className="ml-auto flex items-center gap-3 text-sm">
+            <ThemeToggle />
             <Link to="/settings" hash="account" className="hidden text-stone-600 hover:text-stone-900 hover:underline sm:inline" title="Your account">
               {session.data.user.name}
             </Link>
@@ -153,5 +155,31 @@ export function AppLayout() {
         </main>
       </div>
     </div>
+  );
+}
+
+const THEMES: { value: Theme; icon: string; label: string }[] = [
+  { value: "system", icon: "◐", label: "System" },
+  { value: "light", icon: "☀", label: "Light" },
+  { value: "dark", icon: "☾", label: "Dark" },
+];
+
+/** Cycles system → light → dark. */
+function ThemeToggle() {
+  const [theme, setTheme] = useTheme();
+  const i = THEMES.findIndex((t) => t.value === theme);
+  const current = THEMES[i]!;
+  const next = THEMES[(i + 1) % THEMES.length]!;
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1.5 rounded-md px-2 py-1 text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+      onClick={() => setTheme(next.value)}
+      title={`Theme: ${current.label}. Switch to ${next.label.toLowerCase()}.`}
+      aria-label={`Theme: ${current.label}. Switch to ${next.label.toLowerCase()}.`}
+    >
+      <span aria-hidden className="w-4 text-center">{current.icon}</span>
+      <span className="hidden md:inline">{current.label}</span>
+    </button>
   );
 }

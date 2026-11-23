@@ -14,7 +14,7 @@ export function Button({
       {...props}
       className={cx(
         "inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
-        variant === "primary" && "bg-leaf-700 text-white hover:bg-leaf-800",
+        variant === "primary" && "bg-accent text-on-accent hover:bg-accent-hover",
         variant === "secondary" && "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50",
         variant === "danger" && "border border-red-200 bg-white text-red-700 hover:bg-red-50",
         variant === "ghost" && "text-stone-600 hover:bg-stone-100",
@@ -30,7 +30,7 @@ export function LinkButton({ to, children, variant = "primary" }: { to: string; 
       to={to}
       className={cx(
         "inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm font-medium transition",
-        variant === "primary" ? "bg-leaf-700 text-white hover:bg-leaf-800" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50",
+        variant === "primary" ? "bg-accent text-on-accent hover:bg-accent-hover" : "border border-stone-300 bg-white text-stone-700 hover:bg-stone-50",
       )}
     >
       {children}

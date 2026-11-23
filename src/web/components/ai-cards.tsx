@@ -236,7 +236,7 @@ export function AiSystemCard({ systemId }: { systemId: string }) {
               <div key={u.id} className="group relative flex-1" style={{ height: "100%" }}>
                 <div className="absolute bottom-0 w-full rounded-t bg-stone-200" style={{ height: `${((u.licensedSeats ?? u.activeUsers) / maxUsers) * 100}%` }} />
                 <div className="absolute bottom-0 w-full rounded-t bg-leaf-600" style={{ height: `${(u.activeUsers / maxUsers) * 100}%` }} />
-                <div className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 rounded bg-stone-800 px-1.5 py-0.5 text-[11px] whitespace-nowrap text-white group-hover:block">
+                <div className="pointer-events-none absolute -top-7 left-1/2 hidden -translate-x-1/2 rounded bg-stone-900 px-1.5 py-0.5 text-[11px] whitespace-nowrap text-soil-50 group-hover:block">
                   {u.recordedOn}: {u.activeUsers}
                   {u.licensedSeats ? ` / ${u.licensedSeats}` : ""}
                 </div>

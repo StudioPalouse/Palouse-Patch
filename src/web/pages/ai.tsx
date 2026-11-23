@@ -199,7 +199,7 @@ export function AiRequestsPage() {
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`rounded px-3 py-1.5 ${filter === key ? "bg-leaf-700 text-white" : "text-stone-600 hover:bg-stone-100"}`}
+              className={`rounded px-3 py-1.5 ${filter === key ? "bg-accent text-on-accent" : "text-stone-600 hover:bg-stone-100"}`}
             >
               {text}
             </button>

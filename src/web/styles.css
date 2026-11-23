@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --color-leaf-50: #f3f7ec;
@@ -9,8 +11,70 @@
   --color-leaf-600: #4a7531;
   --color-leaf-700: #3f6b2a;
   --color-leaf-800: #2f5020;
+  --color-leaf-900: #24401a;
   --color-soil-50: #faf8f3;
   --color-soil-100: #f4efe1;
+  /* Filled primary controls, kept separate from leaf text so both read well in dark mode. */
+  --color-accent: #3f6b2a;
+  --color-accent-hover: #2f5020;
+  --color-on-accent: #ffffff;
+}
+
+/*
+ * Dark mode remaps the palette rather than adding dark: variants everywhere:
+ * surfaces (white, soil, stone-50..300) go dark, text shades (stone-400..900,
+ * *-700/800) go light, and badge tints (*-50/100) become muted fills.
+ * The class is set on <html> before first paint by the script in index.html.
+ */
+html.dark {
+  color-scheme: dark;
+  --color-white: #23211f;
+  --color-soil-50: #151413;
+  --color-soil-100: #181716;
+
+  --color-stone-50: #2a2826;
+  --color-stone-100: #312e2b;
+  --color-stone-200: #3a3734;
+  --color-stone-300: #4a4642;
+  --color-stone-400: #847d77;
+  --color-stone-500: #a39c96;
+  --color-stone-600: #bab4ae;
+  --color-stone-700: #d3cec9;
+  --color-stone-800: #e6e2de;
+  --color-stone-900: #f4f2ef;
+
+  --color-leaf-50: #1e2818;
+  --color-leaf-100: #263620;
+  --color-leaf-200: #3b5530;
+  --color-leaf-500: #7fb15c;
+  --color-leaf-600: #6a9c48;
+  --color-leaf-700: #9ccb7a;
+  --color-leaf-800: #b6dc99;
+  --color-leaf-900: #cfeab9;
+  --color-accent: #4c8034;
+  --color-accent-hover: #5b9440;
+
+  --color-amber-50: #2b2416;
+  --color-amber-100: #3a2e14;
+  --color-amber-200: #5a4519;
+  --color-amber-700: #f0c060;
+  --color-amber-800: #f5cf7d;
+  --color-amber-900: #f9dfa3;
+
+  --color-red-50: #2e1b1a;
+  --color-red-100: #3f201e;
+  --color-red-200: #6a2e2a;
+  --color-red-600: #e5675c;
+  --color-red-700: #f08a80;
+  --color-red-800: #f5a59d;
+
+  --color-orange-100: #3d2617;
+  --color-orange-800: #f7b27e;
+  --color-sky-100: #172d3b;
+  --color-sky-500: #4aa8dc;
+  --color-sky-800: #8fcdf0;
+  --color-violet-100: #2a2140;
+  --color-violet-800: #c6b3f5;
 }
 
 body {
