@@ -45,19 +45,19 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    id: "org",
-    title: "Organization",
-    items: [
-      { to: "/people", label: "People", icon: User },
-      { to: "/teams", label: "Teams", icon: Users },
-    ],
-  },
-  {
     id: "ai",
     title: "AI governance",
     items: [
       { to: "/ai", label: "AI tools", icon: Sparkles, exact: true },
       { to: "/ai/requests", label: "AI requests", icon: ClipboardCheck, badge: "awaiting" },
+    ],
+  },
+  {
+    id: "org",
+    title: "Organization",
+    items: [
+      { to: "/people", label: "People", icon: User },
+      { to: "/teams", label: "Teams", icon: Users },
     ],
   },
 ];
@@ -138,13 +138,42 @@ function Sidebar({
 
   return (
     <div className="flex h-full flex-col">
-      <div className={`flex items-center gap-2 py-5 ${rail ? "justify-center px-2" : "px-5"}`}>
-        <img src="/favicon.svg" alt="Patch" className="h-7 w-7 shrink-0" />
+      <div className={`flex items-center gap-2 py-5 ${rail ? "justify-center px-2" : "pr-3 pl-5"}`}>
+        {rail && onToggleRail ? (
+          // Collapsed: the logo is the expand button (shows the expand icon on hover).
+          <button
+            type="button"
+            onClick={onToggleRail}
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+            className="group relative flex h-9 w-9 items-center justify-center rounded-md hover:bg-white/70"
+          >
+            <img src="/favicon.svg" alt="" className="h-7 w-7 transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0" />
+            <PanelLeftOpen
+              className="absolute h-4.5 w-4.5 text-stone-600 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+              strokeWidth={1.75}
+              aria-hidden
+            />
+          </button>
+        ) : (
+          <img src="/favicon.svg" alt="Patch" className="h-7 w-7 shrink-0" />
+        )}
         {!rail && (
           <div className="min-w-0 flex-1">
             <div className="text-lg leading-tight font-semibold text-leaf-800">Patch</div>
             <div className="truncate text-xs text-stone-500">{orgName}</div>
           </div>
+        )}
+        {!rail && onToggleRail && (
+          <button
+            type="button"
+            onClick={onToggleRail}
+            title="Collapse sidebar"
+            aria-label="Collapse sidebar"
+            className="rounded-md p-1.5 text-stone-500 hover:bg-white/70 hover:text-stone-800"
+          >
+            <PanelLeftClose className="h-4.5 w-4.5" strokeWidth={1.75} aria-hidden />
+          </button>
         )}
         {onClose && (
           <button className="rounded-md p-1.5 text-stone-500 hover:bg-stone-100 hover:text-stone-800" onClick={onClose} aria-label="Close menu">
@@ -188,18 +217,6 @@ function Sidebar({
           <NavLink key={item.to} item={item} rail={rail} onNavigate={onNavigate} />
         ))}
         {footer}
-        {onToggleRail && (
-          <button
-            type="button"
-            onClick={onToggleRail}
-            title={rail ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={rail ? "Expand sidebar" : "Collapse sidebar"}
-            className={`flex w-full items-center gap-3 rounded-md py-2 text-sm text-stone-500 hover:bg-white/70 hover:text-stone-800 ${rail ? "justify-center" : "px-3"}`}
-          >
-            {rail ? <PanelLeftOpen className="h-4.5 w-4.5" strokeWidth={1.75} aria-hidden /> : <PanelLeftClose className="h-4.5 w-4.5" strokeWidth={1.75} aria-hidden />}
-            {!rail && <span>Collapse</span>}
-          </button>
-        )}
       </div>
     </div>
   );
