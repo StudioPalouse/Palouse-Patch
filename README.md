@@ -3,7 +3,7 @@
 Patch is an open source, lightweight catalog of the systems your business runs on. Like a garden patch, it is where your organization's tools, owners and use cases live and grow.
 
 - **Systems**: every tool and application, with lifecycle, criticality and vendor
-- **Owners**: business owners, technical owners, admins and champions (people do not need a login)
+- **Owners**: business owners, technical owners, admins and champions. Anyone can be named before they join Patch; each person shows whether they're in Patch, invited, or not yet, and is linked automatically when they join with the same email
 - **Use cases**: what the business actually uses each system for
 - **Artifacts**: flows, apps, forms and agents built on platforms like Power Automate, Appian and Nintex, with direct links back to them
 - **AI governance**: team members request AI tools, features and agents; your AI council reviews them through ordered stages chosen by risk tier; approved tools land in an AI inventory with capability rulings, usage and team adoption

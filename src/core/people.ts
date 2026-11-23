@@ -1,16 +1,59 @@
-import { and, asc, eq } from "drizzle-orm";
-import { artifacts, people, systemOwners, systems, teams } from "../db/schema.ts";
+import { and, asc, eq, or, sql } from "drizzle-orm";
+import { artifacts, invitation, member, people, systemOwners, systems, teams } from "../db/schema.ts";
 import { personInput, type PersonInput } from "../shared/domain.ts";
 import { diff, recordAudit } from "./audit.ts";
-import type { Ctx } from "./context.ts";
+import type { DB } from "../db/client.ts";
+import type { Ctx, Tx } from "./context.ts";
 import { mapDbError, notFound } from "./errors.ts";
 import { assertInOrg, textSearch } from "./util.ts";
 
 const DUPLICATE = "A person with that email already exists";
 
+export type PatchAccess = "member" | "invited" | "none";
+
+/**
+ * Whether a person can sign in to this org: linked to a current member, has a
+ * pending invitation for their email, or neither (named in the catalog only).
+ */
+export const personAccess = sql<PatchAccess>`case
+  when exists (select 1 from ${member} where ${member.organizationId} = ${people.organizationId} and ${member.userId} = ${people.userId}) then 'member'
+  when ${people.email} is not null and exists (
+    select 1 from ${invitation}
+    where ${invitation.organizationId} = ${people.organizationId}
+      and lower(${invitation.email}) = ${people.email}
+      and ${invitation.status} = 'pending'
+      and ${invitation.expiresAt} > now()
+  ) then 'invited'
+  else 'none' end`;
+
+/**
+ * Called when someone joins an org (creates it, accepts an invitation, or is
+ * added). Links them to the person with the same email, so ownerships made
+ * before they joined carry over, or adds them to the directory.
+ */
+export async function linkMemberToPerson(db: DB | Tx, orgId: string, u: { id: string; name: string; email: string }) {
+  const email = u.email.trim().toLowerCase();
+  const [match] = await db
+    .select({ id: people.id, userId: people.userId })
+    .from(people)
+    .where(and(eq(people.organizationId, orgId), or(eq(people.userId, u.id), eq(people.email, email))))
+    .orderBy(sql`${people.userId} = ${u.id} desc nulls last`)
+    .limit(1);
+  if (match) {
+    if (match.userId !== u.id) await db.update(people).set({ userId: u.id }).where(eq(people.id, match.id));
+    return match.id;
+  }
+  const [row] = await db
+    .insert(people)
+    .values({ organizationId: orgId, name: u.name || email, email, userId: u.id })
+    .onConflictDoNothing()
+    .returning({ id: people.id });
+  return row?.id ?? null;
+}
+
 export async function listPeople(ctx: Ctx, opts: { q?: string; teamId?: string } = {}) {
   const rows = await ctx.db
-    .select({ person: people, teamName: teams.name })
+    .select({ person: people, teamName: teams.name, access: personAccess })
     .from(people)
     .leftJoin(teams, eq(teams.id, people.teamId))
     .where(
@@ -21,12 +64,12 @@ export async function listPeople(ctx: Ctx, opts: { q?: string; teamId?: string }
       ),
     )
     .orderBy(asc(people.name));
-  return rows.map((r) => ({ ...r.person, teamName: r.teamName }));
+  return rows.map((r) => ({ ...r.person, teamName: r.teamName, access: r.access }));
 }
 
 export async function getPerson(ctx: Ctx, id: string) {
   const [row] = await ctx.db
-    .select({ person: people, teamName: teams.name })
+    .select({ person: people, teamName: teams.name, access: personAccess })
     .from(people)
     .leftJoin(teams, eq(teams.id, people.teamId))
     .where(and(eq(people.id, id), eq(people.organizationId, ctx.orgId)));
@@ -48,6 +91,7 @@ export async function getPerson(ctx: Ctx, id: string) {
   return {
     ...row.person,
     teamName: row.teamName,
+    access: row.access,
     systems: owned.map((o) => ({ ...o.system, ownershipId: o.ownershipId, role: o.role })),
     artifacts: ownedArtifacts.map((a) => ({ ...a.artifact, systemName: a.systemName })),
   };

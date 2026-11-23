@@ -3,6 +3,7 @@ import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { CRITICALITIES, LIFECYCLES, OWNER_ROLES, label } from "../../shared/domain.ts";
 import {
+  AccessBadge,
   Badge,
   Button,
   Card,
@@ -89,15 +90,26 @@ export function SystemsPage() {
   );
 }
 
+const NEW_PERSON = "__new__";
+
 function OwnersCard({ system }: { system: SystemDetail }) {
   const qc = useQueryClient();
   const [personId, setPersonId] = useState("");
   const [role, setRole] = useState<string>("business");
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
   const people = useQuery({ queryKey: ["people", ""], queryFn: () => api.get<Person[]>("/people") });
+  const creating = personId === NEW_PERSON;
   const add = useMutation({
-    mutationFn: () => api.post(`/systems/${system.id}/owners`, { personId, role }),
+    mutationFn: async () => {
+      // Someone who isn't in Patch yet can be named as an owner straight away.
+      const id = creating ? (await api.post<Person>("/people", { name: newName, email: newEmail || null })).id : personId;
+      await api.post(`/systems/${system.id}/owners`, { personId: id, role });
+    },
     onSuccess: () => {
       setPersonId("");
+      setNewName("");
+      setNewEmail("");
       qc.invalidateQueries();
     },
   });
@@ -116,7 +128,10 @@ function OwnersCard({ system }: { system: SystemDetail }) {
           {system.owners.map((o) => (
             <li key={o.id} className="flex items-center justify-between gap-3 py-2">
               <div>
-                <TextLink to={`/people/${o.personId}`}>{o.name}</TextLink>
+                <div className="flex items-center gap-2">
+                  <TextLink to={`/people/${o.personId}`}>{o.name}</TextLink>
+                  {o.access !== "member" && <AccessBadge access={o.access} />}
+                </div>
                 <div className="text-xs text-stone-500">{label(o.role)}</div>
               </div>
               <Button variant="ghost" onClick={() => remove.mutate(o.id)} disabled={remove.isPending}>
@@ -130,7 +145,7 @@ function OwnersCard({ system }: { system: SystemDetail }) {
         className="flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (personId) add.mutate();
+          if (creating ? newName.trim() : personId) add.mutate();
         }}
       >
         <Select value={personId} onChange={(e) => setPersonId(e.target.value)} className="min-w-40 flex-1">
@@ -138,21 +153,25 @@ function OwnersCard({ system }: { system: SystemDetail }) {
           {people.data?.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
+              {p.access === "member" ? "" : " (not in Patch)"}
             </option>
           ))}
+          <option value={NEW_PERSON}>+ Someone new…</option>
         </Select>
         <div className="w-44">
           <EnumSelect values={OWNER_ROLES} value={role} onChange={setRole} />
         </div>
-        <Button type="submit" variant="secondary" disabled={!personId || add.isPending}>
+        {creating && (
+          <div className="flex w-full flex-wrap gap-2">
+            <Input autoFocus required placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} className="min-w-40 flex-1" />
+            <Input type="email" placeholder="Email (optional)" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="min-w-40 flex-1" />
+          </div>
+        )}
+        <Button type="submit" variant="secondary" disabled={(creating ? !newName.trim() : !personId) || add.isPending}>
           Add owner
         </Button>
       </form>
-      {people.data?.length === 0 && (
-        <p className="mt-2 text-xs text-stone-500">
-          Add people first under <TextLink to="/people/new">People</TextLink>.
-        </p>
-      )}
+      {creating && <p className="mt-2 text-xs text-stone-500">They'll be added to People. They don't need to join Patch to be an owner; you can invite them later.</p>}
     </Card>
   );
 }

@@ -7,6 +7,7 @@ import { db } from "../db/client.ts";
 import * as schema from "../db/schema.ts";
 import { config } from "./config.ts";
 import { actionEmail, sendMail } from "./mail.ts";
+import { linkMemberToPerson } from "../core/people.ts";
 import { isBlockedEmailDomain, WORK_EMAIL_MESSAGE } from "../shared/email-domains.ts";
 
 /** A pending, unexpired invitation lets someone sign up from any domain. */
@@ -49,6 +50,13 @@ export const auth = betterAuth({
   },
   plugins: [
     organization({
+      // Members show up in the People directory (and inherit ownerships made
+      // for their email before they joined).
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization, user }) => void (await linkMemberToPerson(db, organization.id, user)),
+        afterAcceptInvitation: async ({ organization, user }) => void (await linkMemberToPerson(db, organization.id, user)),
+        afterAddMember: async ({ organization, user }) => void (await linkMemberToPerson(db, organization.id, user)),
+      },
       // Anyone signed in can start an org; on self-hosted installs signups
       // can be closed with PATCH_ALLOW_SIGNUP=false.
       allowUserToCreateOrganization: true,

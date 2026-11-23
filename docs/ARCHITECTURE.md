@@ -54,7 +54,7 @@ Shared database, shared schema. Every tenant table has `organization_id`, and al
 |---|---|
 | Organization, Member | Managed by Better Auth. Roles: owner, admin, member |
 | Team | Department or business unit; not tied to logins |
-| Person | Directory entry for owners and champions. Optional link to a user |
+| Person | Directory entry for owners and champions; doesn't need a login. Linked to a user (by email) when they create, join or are added to the org, and every member gets one. Patch access (member, invited, none) is derived from membership and pending invitations |
 | System | A tool or application. Lifecycle (evaluating, pilot, active, sunsetting, retired), criticality, and `isPlatform` for creation platforms |
 | SystemOwner | Person + role (business, technical, admin, champion) on a system |
 | UseCase | What the business does with one or more systems and artifacts |

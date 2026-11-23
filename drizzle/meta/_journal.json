@@ -15,6 +15,13 @@
       "when": 1795391166170,
       "tag": "0001_ai_governance",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795404704348,
+      "tag": "0002_link_people_to_members",
+      "breakpoints": true
     }
   ]
 }

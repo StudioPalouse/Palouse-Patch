@@ -9,6 +9,7 @@ Where Patch is going and what's waiting. Add new ideas under **Investigate** wit
 | 2026-11 | MVP catalog: systems, owners, use cases, artifacts, teams, search, activity log, REST API and tokens, Docker and Fly deploy |
 | 2026-11 | Email through Resend: invitations, password reset (self-service and admin-triggered) |
 | 2026-11 | Work-email-only sign-up (`PATCH_REQUIRE_WORK_EMAIL`) |
+| 2026-11 | People who haven't joined Patch: name owners before they join, Patch access status, invite from a person, automatic linking on join |
 | 2026-11 | AI governance: AI council review stages with risk tiers, AI tool requests, AI inventory (AI profiles on systems), capability rulings, usage snapshots and team rollout |
 
 ## Next

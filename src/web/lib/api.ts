@@ -39,7 +39,7 @@ export const qs = (params: Record<string, string | undefined>) => {
 };
 
 // Response shapes (kept loose on purpose; the API is the source of truth).
-export type Owner = { id: string; systemId: string; role: string; personId: string; name: string; email: string | null };
+export type Owner = { access?: PatchAccess; id: string; systemId: string; role: string; personId: string; name: string; email: string | null };
 export type System = {
   id: string;
   name: string;
@@ -82,7 +82,10 @@ export type Artifact = {
   ownerName?: string | null;
   useCases?: { id: string; title: string; status: string }[];
 };
+/** member: can sign in; invited: invitation pending; none: named in the catalog only. */
+export type PatchAccess = "member" | "invited" | "none";
 export type Person = {
+  access?: PatchAccess;
   id: string;
   name: string;
   email: string | null;

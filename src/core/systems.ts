@@ -10,6 +10,7 @@ import {
 import { diff, recordAudit } from "./audit.ts";
 import type { Ctx } from "./context.ts";
 import { mapDbError, notFound } from "./errors.ts";
+import { personAccess } from "./people.ts";
 import { textSearch } from "./util.ts";
 
 const DUPLICATE = "A system with that name already exists";
@@ -24,6 +25,7 @@ async function ownersFor(ctx: Ctx, systemIds: string[]) {
       personId: people.id,
       name: people.name,
       email: people.email,
+      access: personAccess,
     })
     .from(systemOwners)
     .innerJoin(people, eq(people.id, systemOwners.personId))

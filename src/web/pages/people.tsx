@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { label } from "../../shared/domain.ts";
 import {
+  AccessBadge,
   Badge,
   Button,
   Card,
@@ -21,7 +22,9 @@ import {
   TextLink,
 } from "../components/ui.tsx";
 import { api, qs, type Person, type PersonDetail, type Team } from "../lib/api.ts";
+import { authClient } from "../lib/auth.ts";
 import { useDebounced, useDelete, useEntityForm } from "../lib/hooks.ts";
+import { useMe } from "./ai.tsx";
 
 export function PeoplePage() {
   const [q, setQ] = useState("");
@@ -29,7 +32,7 @@ export function PeoplePage() {
   const people = useQuery({ queryKey: ["people", debounced], queryFn: () => api.get<Person[]>(`/people${qs({ q: debounced })}`) });
   return (
     <>
-      <PageHeader title="People" subtitle="System owners, admins and champions. People do not need a Patch login." actions={<LinkButton to="/people/new">Add person</LinkButton>} />
+      <PageHeader title="People" subtitle="System owners, admins and champions. Anyone can be named here, whether or not they've joined Patch yet." actions={<LinkButton to="/people/new">Add person</LinkButton>} />
       <div className="mb-4">
         <SearchInput value={q} onChange={setQ} placeholder="Filter people…" />
       </div>
@@ -38,7 +41,7 @@ export function PeoplePage() {
       ) : people.data?.length === 0 ? (
         <EmptyState title={q ? "No people match" : "No people yet"} action={!q && <LinkButton to="/people/new">Add a person</LinkButton>} />
       ) : (
-        <Table head={["Name", "Title", "Team", "Email"]}>
+        <Table head={["Name", "Title", "Team", "Email", "Patch access"]}>
           {people.data?.map((p) => (
             <tr key={p.id} className="hover:bg-stone-50">
               <Td>
@@ -47,6 +50,9 @@ export function PeoplePage() {
               <Td className="text-stone-600">{p.title}</Td>
               <Td className="text-stone-600">{p.teamName}</Td>
               <Td className="text-stone-600">{p.email}</Td>
+              <Td>
+                <AccessBadge access={p.access} />
+              </Td>
             </tr>
           ))}
         </Table>
@@ -85,8 +91,10 @@ export function PersonDetailPage() {
             items={[
               ["Email", p.email && <a href={`mailto:${p.email}`} className="text-leaf-700 hover:underline">{p.email}</a>],
               ["Team", p.teamId ? <TextLink to={`/teams/${p.teamId}`}>{p.teamName}</TextLink> : null],
+              ["Patch access", <AccessBadge access={p.access} />],
             ]}
           />
+          <InvitePerson person={p} />
         </Card>
         <div className="space-y-6 lg:col-span-2">
           <Card title="Owns">
@@ -123,6 +131,38 @@ export function PersonDetailPage() {
         </div>
       </div>
     </>
+  );
+}
+
+/** Lets an admin invite someone who is named in the catalog but hasn't joined. */
+function InvitePerson({ person }: { person: PersonDetail }) {
+  const me = useMe();
+  const qc = useQueryClient();
+  const invite = useMutation({
+    mutationFn: async () => {
+      const { error } = await authClient.organization.inviteMember({ email: person.email!, role: "member" });
+      if (error) throw new Error(error.message ?? "Could not send the invitation");
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["person", person.id] }),
+  });
+  const isAdmin = me.data?.role === "owner" || me.data?.role === "admin";
+  if (person.access !== "none") return null;
+  return (
+    <div className="mt-4 border-t border-stone-100 pt-4 text-sm text-stone-600">
+      <p>{person.name} is named in Patch but hasn't joined, so they can't sign in or review requests.</p>
+      {!person.email ? (
+        <p className="mt-2 text-xs text-stone-500">Add an email address to invite them.</p>
+      ) : isAdmin ? (
+        <>
+          <ErrorBanner error={invite.error} />
+          <Button variant="secondary" className="mt-3" onClick={() => invite.mutate()} disabled={invite.isPending}>
+            {invite.isPending ? "Sending…" : "Invite to Patch"}
+          </Button>
+        </>
+      ) : (
+        <p className="mt-2 text-xs text-stone-500">Ask an admin to invite them.</p>
+      )}
+    </div>
   );
 }
 

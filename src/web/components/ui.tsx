@@ -107,6 +107,17 @@ const badgeTone: Record<string, string> = {
   paused: "bg-amber-100 text-amber-800",
 };
 
+const ACCESS_TEXT = { member: "In Patch", invited: "Invited", none: "Not in Patch" } as const;
+const ACCESS_TONE = { member: "bg-leaf-100 text-leaf-800", invited: "bg-sky-100 text-sky-800", none: "bg-stone-100 text-stone-600" } as const;
+
+/** Whether a person in the directory can sign in to Patch. */
+export function AccessBadge({ access }: { access?: keyof typeof ACCESS_TEXT }) {
+  if (!access) return null;
+  return (
+    <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", ACCESS_TONE[access])}>{ACCESS_TEXT[access]}</span>
+  );
+}
+
 export function Badge({ value, children }: { value?: string; children?: ReactNode }) {
   return (
     <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", (value && badgeTone[value]) || "bg-stone-100 text-stone-700")}>
