@@ -13,7 +13,7 @@
 | Runtime | Node 22, running TypeScript directly via type stripping (no server build step) |
 | HTTP | Hono |
 | Database | Postgres 16 with Drizzle ORM and SQL migrations in `drizzle/` |
-| Auth | Better Auth: email and password, organizations, invitations. API tokens for the REST API and MCP. SSO (OIDC/SAML) and OAuth for MCP come later |
+| Auth | Better Auth: email and password, organizations, invitations. API tokens for the REST API and MCP. OAuth 2.1 authorization server for MCP clients (`@better-auth/mcp`, `@better-auth/cimd`). SSO (OIDC/SAML) comes later |
 | UI | React SPA (Vite, TanStack Router and Query, Tailwind), served as static files by the same process |
 | Validation | Zod schemas in `src/shared/domain.ts`, shared by API and UI |
 
@@ -37,13 +37,26 @@ test/       integration tests against a real Postgres
 browser / script ──► /api/v1 route ──►  requireOrg  ─────────┐
                                         (session cookie or   │
                                          bearer token)       ├─►  Ctx  ──►  core service  ──►  Postgres
-AI assistant ──────► /mcp tool ───────►  bearer token only ──┘           (org scoped,
+AI assistant ──────► /mcp tool ───────►  API token or      ──┘           (org scoped,
+                                         OAuth access token
                                                                           validated, audited)
 ```
 
 The MCP server (`src/server/mcp.ts`) is stateless: each POST builds a fresh MCP server bound to the caller's `Ctx`, so nothing is held in memory between requests. Its tools are thin calls into core, exactly like the REST routes.
 
 `Ctx` carries the org id, the caller's role and an actor (user or API token). Core services take a `Ctx` as their first argument and never trust ids from the client: references to other records are checked with `assertInOrg` so one tenant can never link to another tenant's data.
+
+### OAuth for MCP clients
+
+Patch is its own OAuth 2.1 authorization server (Better Auth's `mcp()` plugin, issuer `/api/auth`) for one protected resource, the `/mcp` endpoint.
+
+1. A client calls `/mcp` without a token and gets a 401 whose `WWW-Authenticate` header points at `/.well-known/oauth-protected-resource`. That names the authorization server, whose metadata is at `/.well-known/oauth-authorization-server/api/auth`.
+2. The client registers, either with a client ID metadata document (its `client_id` is an HTTPS URL Patch fetches) or through open dynamic client registration. PKCE is required.
+3. The user signs in on `/sign-in`. The page's query string is the signed authorization request, which the auth client sends back so the flow resumes. Users in several orgs choose one on `/oauth/organization` (Better Auth's `postLogin` step). Then `/oauth/consent` shows the client, the org and the access. Write access (`patch:write`) is opt-in there.
+4. Consent is stored per org (the consent `reference_id`). The access token is a JWT bound to `/mcp` with the org in an `org_id` claim, and it lasts an hour. Refresh tokens last 30 days.
+5. `/mcp` verifies the JWT (signature from the `jwks` table, issuer, audience, expiry, scope), then `ctxFromOAuth` checks live that the user is still a member of `org_id`. The role is read live too. Without `patch:write` the `Ctx` gets the read-only database handle described below. Audit entries read "Jane Doe (via Claude)". The client name is self-declared, except that a metadata document client's id is its URL.
+
+OAuth needs an HTTPS `PATCH_BASE_URL` (or localhost). Otherwise the plugins aren't loaded and `/mcp` accepts API tokens only. Tokens with the `patch_` prefix always take the API token path.
 
 ### Read-only tokens
 
@@ -66,6 +79,7 @@ Shared database, shared schema. Every tenant table has `organization_id`, and al
 | Artifact | Something built on a platform system (flow, app, form, bot, agent...), with external URL and id |
 | AuditEvent | Append-only log of every change with a field level diff |
 | ApiToken | Personal token for the REST API and MCP server, scoped read or write; only a SHA-256 hash is stored |
+| OAuth client, consent, refresh token | Managed by Better Auth's OAuth provider for MCP clients. A consent's `reference_id` is the org it was given for |
 | AiReviewStage | One stage of the org's AI council review order: reviewers (logins), an "any one" or "all" rule, and the minimum risk tier it applies to |
 | AiRequest | A request to bring in an AI tool, an AI feature of an existing system, or an agent. Intake answers compute a risk tier (low, medium, high) |
 | AiRequestStep, AiRequestEvent | The stages copied onto a request when it's submitted, plus its timeline of decisions and comments |

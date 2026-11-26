@@ -13,13 +13,14 @@ Where Patch is going and what's waiting. Add new ideas under **Investigate** wit
 | 2026-11 | People who haven't joined Patch: name owners before they join, Patch access status, invite from a person, automatic linking on join |
 | 2026-11 | AI governance: AI council review stages with risk tiers, AI tool requests, AI inventory (AI profiles on systems), capability rulings, usage snapshots and team rollout |
 | 2026-11 | MCP server at `/mcp` with read tools (`search`, `list_systems`, `get_system`, `find_owner`, `list_use_cases`, `find_artifacts`, `list_ai_tools`), and API tokens scoped read-only or read and write |
+| 2026-11 | OAuth 2.1 sign-in for MCP clients: discovery, client ID metadata documents and dynamic registration, PKCE, choose an org at sign-in, consent with opt-in write access; tokens bound to one org |
 | 2026-11 | Nightly database backups: `pg_dump` to Tigris from a scheduled Fly machine, a test restore of every dump, 30-day and monthly retention, failure alerts by email |
 
 ## Next
 
 1. **MCP server follow-ups.** Still to do:
-   - OAuth 2.1 so clients can connect without pasting a token: authorization server through Better Auth, protected-resource metadata, a consent page. A token's org is the one active at consent.
-   - Write tools, starting with `request_ai_tool` (through the normal council review). They need a token with write scope.
+   - Write tools, starting with `request_ai_tool` (through the normal council review). They need an API token with write scope or an OAuth grant with `patch:write`.
+   - A "Connected apps" list in Settings to see and disconnect OAuth clients (Better Auth's consent endpoints already exist). Until then, connections end when the refresh token expires (30 days) or the user leaves the org.
 2. **SSO**: OIDC and SAML.
 3. **CSV import and export** for systems, people and the AI inventory.
 

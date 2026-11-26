@@ -11,9 +11,11 @@ import * as people from "../core/people.ts";
 import { search } from "../core/search.ts";
 import * as systems from "../core/systems.ts";
 import * as teams from "../core/teams.ts";
-import { ctxFromApiToken } from "../core/tokens.ts";
+import { ctxFromApiToken, ctxFromOAuth, isApiToken } from "../core/tokens.ts";
 import * as useCases from "../core/use-cases.ts";
 import { ARTIFACT_STATUSES, ARTIFACT_TYPES, LIFECYCLES, USE_CASE_STATUSES } from "../shared/domain.ts";
+import { requireMcpAuth } from "@better-auth/mcp";
+import { auth, MCP_RESOURCE, mcpOAuthEnabled, ORG_CLAIM } from "./auth.ts";
 import { config } from "./config.ts";
 
 /**
@@ -23,7 +25,10 @@ import { config } from "./config.ts";
  * caller's Ctx, so nothing is held in memory between requests and the app can
  * keep auto-stopping. Like the REST API, every tool is a thin call into
  * src/core, which does the org scoping, authorization and audit logging.
- * Callers authenticate with a Patch API token (OAuth 2.1 comes later).
+ * Callers authenticate with either a Patch API token or an OAuth access token:
+ * MCP clients discover Patch's authorization server from the 401 challenge,
+ * register (client metadata document or dynamic registration), and the user
+ * signs in and picks an org on the consent page. See docs/ARCHITECTURE.md.
  */
 
 const INSTRUCTIONS = `Patch is this organization's catalog of business systems and AI tools: which systems exist, who owns them, what the business uses them for (use cases), what has been built on them (artifacts such as flows, apps and agents), and the AI council's rulings on AI tools.
@@ -278,33 +283,65 @@ export function createMcpServer(ctx: Ctx) {
   return server;
 }
 
-const unauthorized = (message: string) =>
-  new Response(JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message }, id: null }), {
-    status: 401,
-    headers: { "content-type": "application/json", "www-authenticate": `Bearer realm="Patch", error="invalid_token"` },
+const jsonRpcError = (status: number, message: string, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify({ jsonrpc: "2.0", error: { code: status === 401 ? -32001 : -32000, message }, id: null }), {
+    status,
+    headers: { "content-type": "application/json", ...headers },
   });
+
+async function serve(req: Request, ctx: Ctx) {
+  const server = createMcpServer(ctx);
+  const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+  await server.connect(transport);
+  try {
+    return await transport.handleRequest(req);
+  } finally {
+    await server.close();
+  }
+}
+
+/** Either scope lets a client read; `patch:write` implies read. */
+const canRead = (required: string, granted: ReadonlySet<string>) => granted.has(required) || (required === "patch:read" && granted.has("patch:write"));
+
+/**
+ * OAuth access tokens: JWTs from Patch's own authorization server, checked for
+ * signature, issuer, expiry and audience (this endpoint). Missing or invalid
+ * tokens get a 401 whose WWW-Authenticate header points at the protected
+ * resource metadata, which is how MCP clients discover where to sign in.
+ */
+async function handleOAuthClaims(req: Request, claims: Record<string, unknown>) {
+  const orgId = claims[ORG_CLAIM];
+  const clientId = claims.azp ?? claims.client_id;
+  if (typeof claims.sub !== "string" || typeof orgId !== "string" || typeof clientId !== "string") {
+    return jsonRpcError(401, "This access token isn't for a Patch organization. Reconnect to Patch.", { "www-authenticate": `Bearer error="invalid_token"` });
+  }
+  const scopes = typeof claims.scope === "string" ? claims.scope.split(" ") : [];
+  const ctx = await ctxFromOAuth(db, { userId: claims.sub, orgId, clientId, scopes });
+  if (!ctx) return jsonRpcError(403, "You are no longer a member of the organization this connection was made for");
+  return serve(req, ctx);
+}
+
+// Created only when OAuth is on: requireMcpAuth rejects a non-HTTPS resource URL.
+const handleOAuth = mcpOAuthEnabled
+  ? requireMcpAuth(auth, handleOAuthClaims, { resource: MCP_RESOURCE, requiredScopes: ["patch:read"], isScopeSatisfied: canRead })
+  : undefined;
 
 /** Hono handler for /mcp. */
 export async function handleMcp(c: Context) {
   if (c.req.method !== "POST") {
     // Stateless: no server-initiated stream (GET) and no session to end (DELETE).
-    return new Response(JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed" }, id: null }), {
-      status: 405,
-      headers: { "content-type": "application/json", allow: "POST" },
-    });
+    return jsonRpcError(405, "Method not allowed", { allow: "POST" });
   }
   // Bearer tokens only: never fall back to the browser session cookie.
   const header = c.req.header("authorization");
-  if (!header?.toLowerCase().startsWith("bearer ")) return unauthorized("A Patch API token is required (Authorization: Bearer <token>)");
-  const ctx = await ctxFromApiToken(db, header.slice(7).trim());
-  if (!ctx) return unauthorized("Invalid or expired API token");
-
-  const server = createMcpServer(ctx);
-  const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
-  await server.connect(transport);
-  try {
-    return await transport.handleRequest(c.req.raw);
-  } finally {
-    await server.close();
+  const bearer = header?.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : undefined;
+  if (bearer && isApiToken(bearer)) {
+    const ctx = await ctxFromApiToken(db, bearer);
+    if (!ctx) return jsonRpcError(401, "Invalid or expired API token", { "www-authenticate": `Bearer realm="Patch", error="invalid_token"` });
+    return serve(c.req.raw, ctx);
   }
+  if (handleOAuth) return handleOAuth(c.req.raw);
+  return jsonRpcError(401, bearer ? "Invalid or expired API token" : "A Patch API token is required (Authorization: Bearer <token>)", {
+    "www-authenticate": `Bearer realm="Patch"${bearer ? `, error="invalid_token"` : ""}`,
+  });
 }

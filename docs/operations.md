@@ -14,7 +14,7 @@ Both live in the `palouse-patch` organization in region `sjc`.
 | `palouse-patch` | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY` |
 | `palouse-patch-db` | `POSTGRES_PASSWORD` |
 
-Rotating `BETTER_AUTH_SECRET` signs everyone out. Rotating the database password means changing it in Postgres (`ALTER USER patch PASSWORD '...'`) and then updating both secrets.
+Rotating `BETTER_AUTH_SECRET` signs everyone out, and also disconnects every MCP client connected by OAuth: the token signing keys in the `jwks` table are encrypted with it, so delete those rows after a rotation and new keys are made on the next sign-in. Rotating the database password means changing it in Postgres (`ALTER USER patch PASSWORD '...'`) and then updating both secrets.
 
 ## Domain and email
 
