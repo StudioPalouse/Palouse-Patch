@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { member, user } from "../db/schema.ts";
 import { recordAudit } from "./audit.ts";
-import { requireRole } from "./authz.ts";
+import { requireRole, requireWritable } from "./authz.ts";
 import type { Ctx } from "./context.ts";
 import { notFound } from "./errors.ts";
 
@@ -13,6 +13,7 @@ import { notFound } from "./errors.ts";
  */
 export async function sendMemberPasswordReset(ctx: Ctx, userId: string, send: (email: string) => Promise<void>) {
   requireRole(ctx, "admin");
+  requireWritable(ctx);
   const [target] = await ctx.db
     .select({ id: user.id, name: user.name, email: user.email })
     .from(member)

@@ -1,4 +1,4 @@
-import type { Ctx, OrgRole } from "./context.ts";
+import { READ_ONLY_MESSAGE, type Ctx, type OrgRole } from "./context.ts";
 import { forbidden } from "./errors.ts";
 
 const rank: Record<OrgRole, number> = { member: 1, admin: 2, owner: 3 };
@@ -10,4 +10,13 @@ const rank: Record<OrgRole, number> = { member: 1, admin: 2, owner: 3 };
  */
 export function requireRole(ctx: Ctx, role: OrgRole) {
   if (rank[ctx.role] < rank[role]) throw forbidden();
+}
+
+/**
+ * Refuse read-only tokens up front. Database writes are already blocked by the
+ * read-only `ctx.db`; call this before side effects that are not writes, such
+ * as sending email, so they never happen for a read-only caller.
+ */
+export function requireWritable(ctx: Ctx) {
+  if (ctx.readOnly) throw forbidden(READ_ONLY_MESSAGE);
 }

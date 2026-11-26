@@ -13,7 +13,7 @@
 | Runtime | Node 22, running TypeScript directly via type stripping (no server build step) |
 | HTTP | Hono |
 | Database | Postgres 16 with Drizzle ORM and SQL migrations in `drizzle/` |
-| Auth | Better Auth: email and password, organizations, invitations. SSO (OIDC/SAML) and OAuth for MCP come later |
+| Auth | Better Auth: email and password, organizations, invitations. API tokens for the REST API and MCP. SSO (OIDC/SAML) and OAuth for MCP come later |
 | UI | React SPA (Vite, TanStack Router and Query, Tailwind), served as static files by the same process |
 | Validation | Zod schemas in `src/shared/domain.ts`, shared by API and UI |
 
@@ -34,15 +34,20 @@ test/       integration tests against a real Postgres
 ## Request flow
 
 ```
-browser / script / (later) MCP client
-        │
-        ▼
-  Hono route  ──►  requireOrg middleware  ──►  core service  ──►  Postgres
-                   (session cookie or            (org scoped,
-                    bearer API token → Ctx)        validated, audited)
+browser / script ──► /api/v1 route ──►  requireOrg  ─────────┐
+                                        (session cookie or   │
+                                         bearer token)       ├─►  Ctx  ──►  core service  ──►  Postgres
+AI assistant ──────► /mcp tool ───────►  bearer token only ──┘           (org scoped,
+                                                                          validated, audited)
 ```
 
+The MCP server (`src/server/mcp.ts`) is stateless: each POST builds a fresh MCP server bound to the caller's `Ctx`, so nothing is held in memory between requests. Its tools are thin calls into core, exactly like the REST routes.
+
 `Ctx` carries the org id, the caller's role and an actor (user or API token). Core services take a `Ctx` as their first argument and never trust ids from the client: references to other records are checked with `assertInOrg` so one tenant can never link to another tenant's data.
+
+### Read-only tokens
+
+API tokens are scoped `read` or `write`. For a read-only token, `ctxFromApiToken` gives the `Ctx` a database handle (`readOnlyDb` in `src/core/context.ts`) whose `insert`, `update`, `delete` and `execute` throw 403, including inside transactions. Core services do every write through `ctx.db`, so the scope holds for REST, MCP and any future entry point without a check in each service. Side effects that are not database writes, such as sending email, call `requireWritable(ctx)` first.
 
 ## Multi-tenancy
 
@@ -60,7 +65,7 @@ Shared database, shared schema. Every tenant table has `organization_id`, and al
 | UseCase | What the business does with one or more systems and artifacts |
 | Artifact | Something built on a platform system (flow, app, form, bot, agent...), with external URL and id |
 | AuditEvent | Append-only log of every change with a field level diff |
-| ApiToken | Personal token for the REST API; only a SHA-256 hash is stored |
+| ApiToken | Personal token for the REST API and MCP server, scoped read or write; only a SHA-256 hash is stored |
 | AiReviewStage | One stage of the org's AI council review order: reviewers (logins), an "any one" or "all" rule, and the minimum risk tier it applies to |
 | AiRequest | A request to bring in an AI tool, an AI feature of an existing system, or an agent. Intake answers compute a risk tier (low, medium, high) |
 | AiRequestStep, AiRequestEvent | The stages copied onto a request when it's submitted, plus its timeline of decisions and comments |

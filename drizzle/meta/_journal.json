@@ -22,6 +22,13 @@
       "when": 1795404704348,
       "tag": "0002_link_people_to_members",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795708808315,
+      "tag": "0003_api_token_scope",
+      "breakpoints": true
     }
   ]
 }

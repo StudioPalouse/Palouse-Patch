@@ -4,7 +4,7 @@ import { db } from "../db/client.ts";
 import { member } from "../db/schema.ts";
 import type { Ctx, OrgRole } from "../core/context.ts";
 import { AppError } from "../core/errors.ts";
-import { verifyApiToken } from "../core/tokens.ts";
+import { ctxFromApiToken } from "../core/tokens.ts";
 import { auth } from "./auth.ts";
 
 export type Env = { Variables: { ctx: Ctx } };
@@ -16,14 +16,9 @@ export type Env = { Variables: { ctx: Ctx } };
 export const requireOrg: MiddlewareHandler<Env> = async (c, next) => {
   const header = c.req.header("authorization");
   if (header?.toLowerCase().startsWith("bearer ")) {
-    const resolved = await verifyApiToken(db, header.slice(7).trim());
-    if (!resolved) throw new AppError(401, "unauthorized", "Invalid or expired API token");
-    c.set("ctx", {
-      db,
-      orgId: resolved.orgId,
-      role: resolved.role,
-      actor: { type: "token", userId: resolved.userId, label: resolved.label },
-    });
+    const ctx = await ctxFromApiToken(db, header.slice(7).trim());
+    if (!ctx) throw new AppError(401, "unauthorized", "Invalid or expired API token");
+    c.set("ctx", ctx);
     return next();
   }
 

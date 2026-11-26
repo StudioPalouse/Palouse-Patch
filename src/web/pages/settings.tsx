@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Button, Card, ErrorBanner, Field, Input, PageHeader } from "../components/ui.tsx";
+import { Button, Card, ErrorBanner, Field, Input, PageHeader, Select } from "../components/ui.tsx";
 import { api, type ApiToken } from "../lib/api.ts";
 import { authClient } from "../lib/auth.ts";
 import { AiCouncilCard } from "../components/ai-cards.tsx";
@@ -9,13 +9,15 @@ import { timeAgo } from "../lib/format.ts";
 function TokensCard() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
+  const [scope, setScope] = useState<"read" | "write">("read");
   const [created, setCreated] = useState<string | null>(null);
   const tokens = useQuery({ queryKey: ["tokens"], queryFn: () => api.get<ApiToken[]>("/tokens") });
   const create = useMutation({
-    mutationFn: () => api.post<ApiToken>("/tokens", { name }),
+    mutationFn: () => api.post<ApiToken>("/tokens", { name, scope }),
     onSuccess: (t) => {
       setCreated(t.token ?? null);
       setName("");
+      setScope("read");
       qc.invalidateQueries({ queryKey: ["tokens"] });
     },
   });
@@ -28,7 +30,9 @@ function TokensCard() {
   return (
     <Card title="API tokens">
       <p className="mb-4 text-sm text-stone-500">
-        Tokens let scripts and integrations use the Patch REST API as you. Send them as <code className="text-xs">Authorization: Bearer &lt;token&gt;</code>.
+        Tokens let scripts, integrations and AI assistants use Patch as you, through the REST API or the MCP server at{" "}
+        <code className="text-xs">/mcp</code>. Send them as <code className="text-xs">Authorization: Bearer &lt;token&gt;</code>. Read-only tokens can look things
+        up but never change anything, which is the safer choice for AI assistants.
       </p>
       <ErrorBanner error={create.error ?? revoke.error} />
       {created && (
@@ -38,13 +42,17 @@ function TokensCard() {
         </div>
       )}
       <form
-        className="mb-4 flex gap-2"
+        className="mb-4 flex flex-wrap gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           if (name.trim()) create.mutate();
         }}
       >
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Token name, e.g. CMDB sync" className="max-w-xs" />
+        <Select value={scope} onChange={(e) => setScope(e.target.value as "read" | "write")} aria-label="Access" className="w-auto">
+          <option value="read">Read only</option>
+          <option value="write">Read and write</option>
+        </Select>
         <Button type="submit" variant="secondary" disabled={!name.trim() || create.isPending}>
           Create token
         </Button>
@@ -56,7 +64,7 @@ function TokensCard() {
               <div>
                 <div className="font-medium text-stone-800">{t.name}</div>
                 <div className="text-xs text-stone-500">
-                  <code>{t.prefix}…</code> · created {timeAgo(t.createdAt)}
+                  <code>{t.prefix}…</code> · {t.scope === "read" ? "read only" : "read and write"} · created {timeAgo(t.createdAt)}
                   {t.lastUsedAt ? ` · last used ${timeAgo(t.lastUsedAt)}` : " · never used"}
                 </div>
               </div>

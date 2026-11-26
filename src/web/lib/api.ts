@@ -113,6 +113,7 @@ export type ApiToken = {
   id: string;
   name: string;
   prefix: string;
+  scope: "read" | "write";
   lastUsedAt: string | null;
   expiresAt: string | null;
   revokedAt: string | null;

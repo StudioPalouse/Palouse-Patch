@@ -124,8 +124,13 @@ export const artifactInput = z.object({
   ownerId: optionalId,
 });
 
+export const TOKEN_SCOPES = ["read", "write"] as const;
+export type TokenScope = (typeof TOKEN_SCOPES)[number];
+
 export const apiTokenInput = z.object({
   name: name(100),
+  /** New tokens are read-only unless changes are asked for. */
+  scope: z.enum(TOKEN_SCOPES).default("read"),
   expiresInDays: z.number().int().min(1).max(3650).nullish(),
 });
 

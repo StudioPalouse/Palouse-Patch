@@ -9,11 +9,11 @@ Patch is an open source, lightweight catalog of the systems your business runs o
 - **AI governance**: team members request AI tools, features and agents; your AI council reviews them through ordered stages chosen by risk tier; approved tools land in an AI inventory with capability rulings, usage and team adoption
 - **Activity log**: every change, who made it, and when
 - **Dark mode**: follows the system setting, or pick light or dark from the header
-- **REST API** with personal API tokens
+- **REST API and MCP server** with personal API tokens (read-only or read and write), so scripts and AI assistants like Claude and Microsoft Copilot can use Patch
 
 It is meant as a simple alternative to heavyweight enterprise architecture tools, easy enough for IT and business teams to keep up to date.
 
-Coming next: an MCP server so assistants like Claude and Microsoft Copilot can query Patch, SSO, and license tracking. See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Coming next: OAuth sign-in for MCP clients, SSO, and license tracking. See [docs/ROADMAP.md](docs/ROADMAP.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Self-hosting
 
@@ -56,13 +56,27 @@ pnpm dev:web           # UI with hot reload on :5173
 
 ## API
 
-All endpoints live under `/api/v1` and accept either a browser session or `Authorization: Bearer <token>`. Create tokens under Settings.
+All endpoints live under `/api/v1` and accept either a browser session or `Authorization: Bearer <token>`. Create tokens under Settings. Tokens are read-only unless you choose **Read and write**; a read-only token gets `403` on any change.
 
 ```bash
 curl -H "Authorization: Bearer $PATCH_TOKEN" https://your-patch/api/v1/systems
 ```
 
 Resources: `systems` (plus `systems/:id/owners`), `use-cases`, `artifacts`, `people`, `teams`, `search?q=`, `activity`, `tokens`.
+
+## MCP server
+
+Patch serves the [Model Context Protocol](https://modelcontextprotocol.io) at `/mcp` (Streamable HTTP), so AI assistants can look things up in your catalog. Authenticate with an API token; a **read-only** token is the right choice for assistants.
+
+Tools: `search`, `list_systems`, `get_system`, `find_owner`, `list_use_cases`, `find_artifacts` and `list_ai_tools`. They accept a record's id or name, and every result links back to its page in Patch.
+
+Claude Code:
+
+```bash
+claude mcp add --transport http patch https://your-patch/mcp --header "Authorization: Bearer $PATCH_TOKEN"
+```
+
+Other clients that support remote MCP servers with custom headers take the same URL and header. OAuth sign-in for clients that need it is on the [roadmap](docs/ROADMAP.md).
 
 ## License
 
