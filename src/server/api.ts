@@ -33,7 +33,7 @@ export const api = new Hono<Env>()
   .get("/me", async (c) => {
     const ctx = ctxOf(c);
     const isCouncil = await aiCouncil.isCouncilMember(ctx.db, ctx.orgId, ctx.actor.userId);
-    return c.json({ data: { orgId: ctx.orgId, role: ctx.role, actor: ctx.actor, isCouncil } });
+    return c.json({ data: { orgId: ctx.orgId, role: ctx.role, actor: ctx.actor, readOnly: !!ctx.readOnly, isCouncil } });
   })
   .get("/search", async (c) => c.json({ data: await search(ctxOf(c), c.req.query("q") ?? "") }))
   .get("/activity", async (c) => {

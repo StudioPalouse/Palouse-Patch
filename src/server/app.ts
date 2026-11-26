@@ -9,6 +9,7 @@ import { AppError } from "../core/errors.ts";
 import { api } from "./api.ts";
 import { auth } from "./auth.ts";
 import { config } from "./config.ts";
+import { handleMcp } from "./mcp.ts";
 import { setNotifier } from "../core/notify.ts";
 import { actionEmail, sendMail } from "./mail.ts";
 
@@ -30,6 +31,7 @@ export function createApp() {
   app.get("/api/config", (c) => c.json({ allowSignup: config.allowSignup, mailEnabled: !!config.resendApiKey, requireWorkEmail: config.requireWorkEmail }));
   app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
   app.route("/api/v1", api);
+  app.all("/mcp", handleMcp);
   app.all("/api/*", (c) => c.json({ error: { code: "not_found", message: "Not found" } }, 404));
 
   // Single page app: static assets, then index.html for client-side routes.

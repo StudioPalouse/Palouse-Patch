@@ -15,7 +15,9 @@ Where Patch is going and what's waiting. Add new ideas under **Investigate** wit
 
 ## Next
 
-1. **MCP server** at `/mcp` (Streamable HTTP, OAuth 2.1 plus API tokens) so assistants like Claude and Copilot can query Patch. Read tools first (`search`, `get_system`, `find_owner`, `list_use_cases`, `find_artifacts`, `list_ai_tools`), then write tools such as `request_ai_tool`.
+1. **MCP server follow-ups.** Read tools with API tokens are built (see Shipped once merged). Still to do:
+   - OAuth 2.1 so clients can connect without pasting a token: authorization server through Better Auth, protected-resource metadata, a consent page. A token's org is the one active at consent.
+   - Write tools, starting with `request_ai_tool` (through the normal council review). They need a token with write scope.
 2. **SSO**: OIDC and SAML.
 3. **CSV import and export** for systems, people and the AI inventory.
 4. **Database backups**: nightly `pg_dump` from the Fly Postgres machine to object storage, with a tested restore. Deferred 2026-11-22.

@@ -320,6 +320,8 @@ export const apiTokens = pgTable(
     name: text("name").notNull(),
     prefix: text("prefix").notNull(),
     tokenHash: text("token_hash").notNull().unique(),
+    /** "read" tokens cannot change anything; existing tokens keep "write". */
+    scope: text("scope").$type<"read" | "write">().notNull().default("write"),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),

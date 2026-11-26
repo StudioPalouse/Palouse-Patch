@@ -19,7 +19,7 @@ describe("REST API", () => {
   it("works end to end with an API token, scoped to the token's org", async () => {
     const a = await makeOrg();
     const b = await makeOrg();
-    const { token: tokenA } = await createApiToken(a, { name: "a" });
+    const { token: tokenA } = await createApiToken(a, { name: "a", scope: "write" });
     const { token: tokenB } = await createApiToken(b, { name: "b" });
 
     const created = await call("/api/v1/systems", tokenA, { method: "POST", body: JSON.stringify({ name: "Jira" }) });
@@ -42,7 +42,7 @@ describe("REST API", () => {
 
   it("returns field errors for invalid input", async () => {
     const ctx = await makeOrg();
-    const { token } = await createApiToken(ctx, { name: "t" });
+    const { token } = await createApiToken(ctx, { name: "t", scope: "write" });
     const res = await call("/api/v1/systems", token, { method: "POST", body: JSON.stringify({ name: "", lifecycle: "nope" }) });
     expect(res.status).toBe(422);
     const body = await res.json();
