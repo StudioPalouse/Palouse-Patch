@@ -1,0 +1,18 @@
+# Nightly database backup for the hosted Patch app. This app has no service and
+# no always-on machine: one scheduled machine runs backup.sh once a day and
+# exits. See docs/operations.md (Backups) for setup and restores.
+#
+# Secrets: DATABASE_URL (read-only patch_backup role), RESEND_API_KEY, and the
+# Tigris credentials from `fly storage create` (AWS_ACCESS_KEY_ID,
+# AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3, AWS_REGION, BUCKET_NAME).
+app = "palouse-patch-backup"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  BACKUP_PREFIX = "patch"
+  KEEP_DAILY_DAYS = "30"
+  KEEP_MONTHLY_DAYS = "365"
+  MAIL_FROM = "Patch backups <patch@palouse.ai>"
