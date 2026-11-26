@@ -12,15 +12,16 @@ Where Patch is going and what's waiting. Add new ideas under **Investigate** wit
 | 2026-11 | Dark mode (system, light or dark; saved per browser) |
 | 2026-11 | People who haven't joined Patch: name owners before they join, Patch access status, invite from a person, automatic linking on join |
 | 2026-11 | AI governance: AI council review stages with risk tiers, AI tool requests, AI inventory (AI profiles on systems), capability rulings, usage snapshots and team rollout |
+| 2026-11 | MCP server at `/mcp` with read tools (`search`, `list_systems`, `get_system`, `find_owner`, `list_use_cases`, `find_artifacts`, `list_ai_tools`), and API tokens scoped read-only or read and write |
+| 2026-11 | Nightly database backups: `pg_dump` to Tigris from a scheduled Fly machine, a test restore of every dump, 30-day and monthly retention, failure alerts by email |
 
 ## Next
 
-1. **MCP server follow-ups.** Read tools with API tokens are built (see Shipped once merged). Still to do:
+1. **MCP server follow-ups.** Still to do:
    - OAuth 2.1 so clients can connect without pasting a token: authorization server through Better Auth, protected-resource metadata, a consent page. A token's org is the one active at consent.
    - Write tools, starting with `request_ai_tool` (through the normal council review). They need a token with write scope.
 2. **SSO**: OIDC and SAML.
 3. **CSV import and export** for systems, people and the AI inventory.
-4. **Database backups**: nightly `pg_dump` from the Fly Postgres machine to object storage, with a tested restore. Deferred 2026-11-22.
 
 ## Later
 
