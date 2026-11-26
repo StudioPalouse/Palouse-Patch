@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button, ErrorBanner, Field, Input } from "../components/ui.tsx";
-import { authClient } from "../lib/auth.ts";
+import { authClient, inOAuthFlow, oauthRedirect } from "../lib/auth.ts";
 import { slugify } from "../lib/format.ts";
 import { isBlockedEmailDomain, WORK_EMAIL_MESSAGE } from "../../shared/email-domains.ts";
 
@@ -18,7 +18,23 @@ function forwardRedirect() {
   return r === "/" ? undefined : { redirect: r };
 }
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+/** Link between sign-in and sign-up that keeps ?redirect, or the whole signed query during an OAuth flow. */
+function AuthLink({ to, children }: { to: "/sign-in" | "/sign-up"; children: React.ReactNode }) {
+  const className = "font-medium text-leaf-700 hover:underline";
+  if (inOAuthFlow())
+    return (
+      <a href={to + window.location.search} className={className}>
+        {children}
+      </a>
+    );
+  return (
+    <Link to={to} search={forwardRedirect()} className={className}>
+      {children}
+    </Link>
+  );
+}
+
+export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
@@ -46,10 +62,10 @@ export function SignInPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await authClient.signIn.email({ email, password });
+    const { data, error } = await authClient.signIn.email({ email, password });
     setBusy(false);
     if (error) return setError(error.message ?? "Could not sign in");
-    window.location.href = redirectTarget();
+    window.location.href = oauthRedirect(data) ?? redirectTarget();
   }
 
   return (
@@ -76,9 +92,7 @@ export function SignInPage() {
       {config.data?.allowSignup && (
         <p className="mt-5 text-center text-sm text-stone-500">
           New here?{" "}
-          <Link to="/sign-up" search={forwardRedirect()} className="font-medium text-leaf-700 hover:underline">
-            Create an account
-          </Link>
+          <AuthLink to="/sign-up">Create an account</AuthLink>
         </p>
       )}
     </Shell>
@@ -97,10 +111,10 @@ export function SignUpPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const { error } = await authClient.signUp.email(form);
+    const { data, error } = await authClient.signUp.email(form);
     setBusy(false);
     if (error) return setError(error.message ?? "Could not create account");
-    window.location.href = redirectTarget();
+    window.location.href = oauthRedirect(data) ?? redirectTarget();
   }
 
   return (
@@ -133,9 +147,7 @@ export function SignUpPage() {
       </form>
       <p className="mt-5 text-center text-sm text-stone-500">
         Already have an account?{" "}
-        <Link to="/sign-in" search={forwardRedirect()} className="font-medium text-leaf-700 hover:underline">
-          Sign in
-        </Link>
+        <AuthLink to="/sign-in">Sign in</AuthLink>
       </p>
     </Shell>
   );

@@ -30,9 +30,9 @@ function TokensCard() {
   return (
     <Card title="API tokens">
       <p className="mb-4 text-sm text-stone-500">
-        Tokens let scripts, integrations and AI assistants use Patch as you, through the REST API or the MCP server at{" "}
-        <code className="text-xs">/mcp</code>. Send them as <code className="text-xs">Authorization: Bearer &lt;token&gt;</code>. Read-only tokens can look things
-        up but never change anything, which is the safer choice for AI assistants.
+        Tokens let scripts and integrations use Patch as you, through the REST API or the MCP server at <code className="text-xs">/mcp</code>. Send them as{" "}
+        <code className="text-xs">Authorization: Bearer &lt;token&gt;</code>. Read-only tokens can look things up but never change anything. Most AI assistants
+        don't need a token: add <code className="text-xs">/mcp</code> as a remote MCP server and sign in when they ask.
       </p>
       <ErrorBanner error={create.error ?? revoke.error} />
       {created && (

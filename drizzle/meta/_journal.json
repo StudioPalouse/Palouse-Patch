@@ -29,6 +29,13 @@
       "when": 1795708808315,
       "tag": "0003_api_token_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795732604740,
+      "tag": "0004_mcp_oauth",
+      "breakpoints": true
     }
   ]
 }

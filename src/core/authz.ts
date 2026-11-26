@@ -1,4 +1,4 @@
-import { READ_ONLY_MESSAGE, type Ctx, type OrgRole } from "./context.ts";
+import { OAUTH_READ_ONLY_MESSAGE, READ_ONLY_MESSAGE, type Ctx, type OrgRole } from "./context.ts";
 import { forbidden } from "./errors.ts";
 
 const rank: Record<OrgRole, number> = { member: 1, admin: 2, owner: 3 };
@@ -18,5 +18,5 @@ export function requireRole(ctx: Ctx, role: OrgRole) {
  * as sending email, so they never happen for a read-only caller.
  */
 export function requireWritable(ctx: Ctx) {
-  if (ctx.readOnly) throw forbidden(READ_ONLY_MESSAGE);
+  if (ctx.readOnly) throw forbidden(ctx.actor.type === "oauth" ? OAUTH_READ_ONLY_MESSAGE : READ_ONLY_MESSAGE);
 }

@@ -1,12 +1,14 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import type { DB } from "../db/client.ts";
-import { apiTokens, member, user } from "../db/schema.ts";
+import { apiTokens, member, oauthClient, user } from "../db/schema.ts";
 import { apiTokenInput } from "../shared/domain.ts";
-import { readOnlyDb, type Ctx, type OrgRole } from "./context.ts";
+import { OAUTH_READ_ONLY_MESSAGE, readOnlyDb, type Ctx, type OrgRole } from "./context.ts";
 import { notFound } from "./errors.ts";
 
 const PREFIX = "patch_";
+/** Patch API tokens start with `patch_`; any other bearer token is treated as OAuth. */
+export const isApiToken = (token: string) => token.startsWith(PREFIX);
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
 
 /** Create a token for the calling user. The plaintext is returned only once. */
@@ -106,6 +108,33 @@ export async function ctxFromApiToken(db: DB, token: string): Promise<Ctx | null
     orgId: resolved.orgId,
     role: resolved.role,
     actor: { type: "token", userId: resolved.userId, label: resolved.label },
+    ...(readOnly ? { readOnly } : {}),
+  };
+}
+
+/**
+ * Build the core context for a verified OAuth access token (an MCP client the
+ * user connected by signing in). Like API tokens, membership and role are read
+ * live, so removing someone from the org cuts off their connected clients at
+ * once. Without the `patch:write` scope the database handle refuses writes.
+ */
+export async function ctxFromOAuth(
+  db: DB,
+  grant: { userId: string; orgId: string; clientId: string; scopes: string[] },
+): Promise<Ctx | null> {
+  const [row] = await db
+    .select({ role: member.role, userName: user.name, clientName: oauthClient.name })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .leftJoin(oauthClient, eq(oauthClient.clientId, grant.clientId))
+    .where(and(eq(member.userId, grant.userId), eq(member.organizationId, grant.orgId)));
+  if (!row) return null;
+  const readOnly = !grant.scopes.includes("patch:write");
+  return {
+    db: readOnly ? readOnlyDb(db, OAUTH_READ_ONLY_MESSAGE) : db,
+    orgId: grant.orgId,
+    role: row.role as OrgRole,
+    actor: { type: "oauth", userId: grant.userId, label: `${row.userName} (via ${row.clientName || "an MCP client"})` },
     ...(readOnly ? { readOnly } : {}),
   };
 }

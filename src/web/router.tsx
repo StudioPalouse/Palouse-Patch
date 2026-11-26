@@ -11,6 +11,7 @@ import {
   SignInPage,
   SignUpPage,
 } from "./pages/auth.tsx";
+import { OAuthConsentPage, OAuthOrganizationPage } from "./pages/oauth.tsx";
 import { OverviewPage } from "./pages/overview.tsx";
 import { PeoplePage, PersonDetailPage, PersonFormPage } from "./pages/people.tsx";
 import { SettingsPage } from "./pages/settings.tsx";
@@ -36,6 +37,8 @@ const acceptInvitation = createRoute({
     return <AcceptInvitationPage id={id} />;
   },
 });
+const oauthOrganization = createRoute({ getParentRoute: () => root, path: "/oauth/organization", component: OAuthOrganizationPage });
+const oauthConsent = createRoute({ getParentRoute: () => root, path: "/oauth/consent", component: OAuthConsentPage });
 const app = createRoute({ getParentRoute: () => root, id: "app", component: AppLayout });
 
 const page = (path: string, component: () => React.ReactNode) => createRoute({ getParentRoute: () => app, path, component });
@@ -47,6 +50,8 @@ const routeTree = root.addChildren([
   forgotPassword,
   resetPassword,
   acceptInvitation,
+  oauthOrganization,
+  oauthConsent,
   app.addChildren([
     page("/", OverviewPage),
     page("/systems", SystemsPage),
